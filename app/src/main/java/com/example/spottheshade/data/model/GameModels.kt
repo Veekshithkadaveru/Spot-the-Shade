@@ -15,13 +15,15 @@ data class GameState(
     val level: Int = 1,
     val gameResult: GameResult? = null,
     val timeRemaining: Int = 10,
-    val hasUsedExtraTime: Boolean = false
+    val hasUsedExtraTime: Boolean = false,
+    val lives: Int = 3
 )
 
 sealed class GameResult {
     object Correct : GameResult()
     object Wrong : GameResult()
     object Timeout : GameResult()
+    object GameOver : GameResult() // When all lives are lost
 }
 
 enum class GameStatus {

@@ -93,10 +93,38 @@ fun GameplayScreen(
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
-            Text(
-                text = "Score: ${gameState.score}",
-                style = MaterialTheme.typography.headlineSmall
-            )
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = "Score: ${gameState.score}",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                // Lives display
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Lives: ",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    // Show heart emoji for each life
+                    repeat(gameState.lives) {
+                        Text(
+                            text = "❤️",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                    // Show empty hearts for lost lives (up to 5 total for visual consistency)
+                    repeat(5 - gameState.lives) {
+                        Text(
+                            text = "🤍",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
+            }
         }
 
         // Timer with extra time indicator
@@ -233,6 +261,16 @@ fun GameplayScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text("You found the different shade!")
+                            
+                            // Show life bonus message every 5 levels
+                            if (gameState.level % 5 == 0 && gameState.lives < 5) {
+                                Text(
+                                    text = "🎁 Bonus Life Earned! ❤️",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
                         }
 
                         is GameResult.Wrong -> {
@@ -251,6 +289,15 @@ fun GameplayScreen(
                                 color = MaterialTheme.colorScheme.error
                             )
                             Text("You ran out of time!")
+                        }
+                        
+                        is GameResult.GameOver -> {
+                            Text(
+                                text = "💀 Game Over!",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text("No more lives remaining!")
                         }
 
 
@@ -277,8 +324,14 @@ fun GameplayScreen(
                                         ) {
                                             Text("⚡ +5 Seconds")
                                         }
-                                        Button(onClick = { viewModel.playAgain() }) {
-                                            Text("Play Again")
+                                        if (gameState.lives > 0) {
+                                            Button(onClick = { viewModel.continueAfterLifeLoss() }) {
+                                                Text("Continue (${gameState.lives} ❤️)")
+                                            }
+                                        } else {
+                                            Button(onClick = { viewModel.playAgain() }) {
+                                                Text("Play Again")
+                                            }
                                         }
                                     }
                                     Button(
@@ -289,13 +342,19 @@ fun GameplayScreen(
                                     }
                                 }
                             } else {
-                                // Already used extra time, show normal options
+                                // Already used extra time, show continue or game over options
                                 Row(
                                     modifier = Modifier.padding(top = 16.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Button(onClick = { viewModel.playAgain() }) {
-                                        Text("Play Again")
+                                    if (gameState.lives > 0) {
+                                        Button(onClick = { viewModel.continueAfterLifeLoss() }) {
+                                            Text("Continue (${gameState.lives} ❤️)")
+                                        }
+                                    } else {
+                                        Button(onClick = { viewModel.playAgain() }) {
+                                            Text("Play Again")
+                                        }
                                     }
                                     Button(onClick = { navController.navigate(Screen.MainMenu.route) }) {
                                         Text("Main Menu")
@@ -325,17 +384,52 @@ fun GameplayScreen(
                             }
                         }
 
-                        else -> {
-                            // Normal result buttons for wrong answers
+                        is GameResult.Wrong -> {
+                            // Wrong answer - show continue if lives remaining
                             Row(
                                 modifier = Modifier.padding(top = 16.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Button(onClick = { viewModel.playAgain() }) {
-                                    Text("Play Again")
+                                if (gameState.lives > 0) {
+                                    Button(onClick = { viewModel.continueAfterLifeLoss() }) {
+                                        Text("Continue (${gameState.lives} ❤️)")
+                                    }
+                                } else {
+                                    Button(onClick = { viewModel.playAgain() }) {
+                                        Text("Play Again")
+                                    }
                                 }
                                 Button(onClick = { navController.navigate(Screen.MainMenu.route) }) {
                                     Text("Main Menu")
+                                }
+                            }
+                        }
+                        
+                        is GameResult.GameOver -> {
+                            // Game over - only restart or main menu options
+                            Column(
+                                modifier = Modifier.padding(top = 16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Final Score: ${gameState.score}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                Text(
+                                    text = "Reached Level: ${gameState.level}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(onClick = { viewModel.playAgain() }) {
+                                        Text("Play Again")
+                                    }
+                                    Button(onClick = { navController.navigate(Screen.MainMenu.route) }) {
+                                        Text("Main Menu")
+                                    }
                                 }
                             }
                         }

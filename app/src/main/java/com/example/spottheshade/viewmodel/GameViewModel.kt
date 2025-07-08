@@ -33,7 +33,8 @@ class GameViewModel : ViewModel() {
                 level = 1,
                 gameResult = null,
                 timeRemaining = 10,
-                hasUsedExtraTime = false
+                hasUsedExtraTime = false,
+                lives = 3
             )
             
             // Start countdown timer
@@ -74,11 +75,7 @@ class GameViewModel : ViewModel() {
             // Time's up!
             val currentState = _gameState.value
             if (currentState.isGameActive) {
-                _gameState.value = currentState.copy(
-                    gameResult = GameResult.Timeout,
-                    isGameActive = false,
-                    timeRemaining = 0
-                )
+                handleLifeLoss(GameResult.Timeout)
             }
         }
     }
@@ -98,18 +95,24 @@ class GameViewModel : ViewModel() {
              // Correct selection! Progress to next level
              val newLevel = currentState.level + 1
              val newScore = currentState.score + (10 * currentState.level)
+             
+             // Award extra life every 5 levels (but cap at 5 lives total)
+             val newLives = if (newLevel % 5 == 0 && currentState.lives < 5) {
+                 currentState.lives + 1
+             } else {
+                 currentState.lives
+             }
+             
              _gameState.value = currentState.copy(
                  gameResult = GameResult.Correct,
                  score = newScore,
                  level = newLevel,
-                 isGameActive = false
+                 isGameActive = false,
+                 lives = newLives
              )
          } else {
              // Wrong selection!
-             _gameState.value = currentState.copy(
-                 gameResult = GameResult.Wrong,
-                 isGameActive = false
-             )
+             handleLifeLoss(GameResult.Wrong)
          }
     }
     
@@ -137,5 +140,49 @@ class GameViewModel : ViewModel() {
         }
     }
     
+    private fun handleLifeLoss(resultType: GameResult) {
+        val currentState = _gameState.value
+        val newLives = currentState.lives - 1
+        
+        if (newLives <= 0) {
+            // Game Over - no more lives
+            _gameState.value = currentState.copy(
+                gameResult = GameResult.GameOver,
+                isGameActive = false,
+                lives = 0,
+                timeRemaining = 0
+            )
+        } else {
+            // Still have lives - show result but keep going
+            _gameState.value = currentState.copy(
+                gameResult = resultType,
+                isGameActive = false,
+                lives = newLives,
+                timeRemaining = if (resultType == GameResult.Timeout) 0 else currentState.timeRemaining
+            )
+        }
+    }
+    
+    // Add function to continue after losing a life
+    fun continueAfterLifeLoss() {
+        val currentState = _gameState.value
+        if (currentState.lives > 0 && currentState.gameResult != GameResult.GameOver) {
+            // Generate new grid for same level and continue
+            viewModelScope.launch {
+                timerJob?.cancel()
+                
+                val grid = gridGenerator.generateGrid(level = currentState.level)
+                _gameState.value = currentState.copy(
+                    grid = grid,
+                    isGameActive = true,
+                    gameResult = null,
+                    timeRemaining = 10,
+                    hasUsedExtraTime = false
+                )
+                
+                startTimer()
+            }
+        }
+    }
 
 } 
