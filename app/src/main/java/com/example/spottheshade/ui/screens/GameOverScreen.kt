@@ -12,12 +12,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.spottheshade.navigation.Screen
 
 @Composable
-fun GameOverScreen(navController: NavHostController) {
+fun GameOverScreen(
+    navController: NavHostController,
+    finalScore: Int,
+    finalLevel: Int
+) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -26,12 +31,32 @@ fun GameOverScreen(navController: NavHostController) {
         Text(
             text = "Game Over",
             style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 24.dp),
+            fontWeight = FontWeight.Bold
+        )
+        
+        Text(
+            text = "Final Score",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         Text(
-            text = "Your Score: 0",
+            text = "$finalScore",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 32.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
+            fontWeight = FontWeight.Bold
+        )
+        
+        Text(
+            text = "Highest Level Reached",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = "Level $finalLevel",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(bottom = 32.dp),
+            fontWeight = FontWeight.SemiBold
         )
         
         Row(
