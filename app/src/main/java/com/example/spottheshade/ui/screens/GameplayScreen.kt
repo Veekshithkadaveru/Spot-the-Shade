@@ -109,15 +109,15 @@ fun GameplayScreen(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.secondary
                     )
-                    // Show heart emoji for each life
+                    // Show heart emoji for each life (max 3)
                     repeat(gameState.lives) {
                         Text(
                             text = "❤️",
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
-                    // Show empty hearts for lost lives (up to 5 total for visual consistency)
-                    repeat(5 - gameState.lives) {
+                    // Show empty hearts for lost lives (up to 3 total)
+                    repeat(3 - gameState.lives) {
                         Text(
                             text = "🤍",
                             style = MaterialTheme.typography.labelMedium
@@ -261,16 +261,6 @@ fun GameplayScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text("You found the different shade!")
-                            
-                            // Show life bonus message every 5 levels
-                            if (gameState.level % 5 == 0 && gameState.lives < 5) {
-                                Text(
-                                    text = "🎁 Bonus Life Earned! ❤️",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.padding(top = 8.dp)
-                                )
-                            }
                         }
 
                         is GameResult.Wrong -> {
@@ -326,7 +316,7 @@ fun GameplayScreen(
                                         }
                                         if (gameState.lives > 0) {
                                             Button(onClick = { viewModel.continueAfterLifeLoss() }) {
-                                                Text("Continue (${gameState.lives} ❤️)")
+                                                Text("Continue • ${gameState.lives} ❤️ left")
                                             }
                                         } else {
                                             Button(onClick = { viewModel.playAgain() }) {
@@ -349,7 +339,7 @@ fun GameplayScreen(
                                 ) {
                                     if (gameState.lives > 0) {
                                         Button(onClick = { viewModel.continueAfterLifeLoss() }) {
-                                            Text("Continue (${gameState.lives} ❤️)")
+                                            Text("Continue • ${gameState.lives} ❤️ left")
                                         }
                                     } else {
                                         Button(onClick = { viewModel.playAgain() }) {
@@ -392,7 +382,7 @@ fun GameplayScreen(
                             ) {
                                 if (gameState.lives > 0) {
                                     Button(onClick = { viewModel.continueAfterLifeLoss() }) {
-                                        Text("Continue (${gameState.lives} ❤️)")
+                                        Text("Continue • ${gameState.lives} ❤️ left")
                                     }
                                 } else {
                                     Button(onClick = { viewModel.playAgain() }) {
