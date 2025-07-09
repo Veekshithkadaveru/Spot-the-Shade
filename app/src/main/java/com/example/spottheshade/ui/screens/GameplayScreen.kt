@@ -52,6 +52,16 @@ fun GameplayScreen(
     LaunchedEffect(key1 = true) {
         viewModel.startGame()
     }
+    
+    // Navigate to Game Over screen when game ends
+    LaunchedEffect(gameState.gameResult) {
+        if (gameState.gameResult == GameResult.GameOver) {
+            navController.navigate(Screen.GameOver.createRoute(gameState.score, gameState.level)) {
+                // Clear the back stack so user can't go back to gameplay
+                popUpTo(Screen.MainMenu.route) { inclusive = false }
+            }
+        }
+    }
 
     // Cleanup timer when leaving screen
     DisposableEffect(Unit) {
@@ -396,32 +406,7 @@ fun GameplayScreen(
                         }
                         
                         is GameResult.GameOver -> {
-                            // Game over - only restart or main menu options
-                            Column(
-                                modifier = Modifier.padding(top = 16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "Final Score: ${gameState.score}",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                                Text(
-                                    text = "Reached Level: ${gameState.level}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Button(onClick = { viewModel.playAgain() }) {
-                                        Text("Play Again")
-                                    }
-                                    Button(onClick = { navController.navigate(Screen.MainMenu.route) }) {
-                                        Text("Main Menu")
-                                    }
-                                }
-                            }
+
                         }
                     }
                 }
@@ -441,7 +426,7 @@ fun GameplayScreen(
 
 @Composable
 fun GameCircle(
-    color: androidx.compose.ui.graphics.Color,
+    color: Color,
     onClick: () -> Unit,
     enabled: Boolean,
     size: Dp = 80.dp

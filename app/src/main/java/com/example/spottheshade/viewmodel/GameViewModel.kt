@@ -120,12 +120,13 @@ class GameViewModel : ViewModel() {
     fun useExtraTime() {
         val currentState = _gameState.value
         if (currentState.gameResult == GameResult.Timeout && !currentState.hasUsedExtraTime) {
-            // Give 5 extra seconds and resume the game
+
             _gameState.value = currentState.copy(
                 isGameActive = true,
                 gameResult = null,
                 timeRemaining = 5,
-                hasUsedExtraTime = true
+                hasUsedExtraTime = true,
+                lives = currentState.lives + 1
             )
 
             startTimer(5)
