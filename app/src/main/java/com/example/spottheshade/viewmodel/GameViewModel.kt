@@ -95,20 +95,12 @@ class GameViewModel : ViewModel() {
              // Correct selection! Progress to next level
              val newLevel = currentState.level + 1
              val newScore = currentState.score + (10 * currentState.level)
-             
-             // Award extra life every 5 levels (but cap at 5 lives total)
-             val newLives = if (newLevel % 5 == 0 && currentState.lives < 5) {
-                 currentState.lives + 1
-             } else {
-                 currentState.lives
-             }
-             
+
              _gameState.value = currentState.copy(
                  gameResult = GameResult.Correct,
                  score = newScore,
                  level = newLevel,
-                 isGameActive = false,
-                 lives = newLives
+                 isGameActive = false
              )
          } else {
              // Wrong selection!
@@ -167,13 +159,11 @@ class GameViewModel : ViewModel() {
     fun continueAfterLifeLoss() {
         val currentState = _gameState.value
         if (currentState.lives > 0 && currentState.gameResult != GameResult.GameOver) {
-            // Generate new grid for same level and continue
+            // Keep the same grid, just reset game state and timer
             viewModelScope.launch {
                 timerJob?.cancel()
                 
-                val grid = gridGenerator.generateGrid(level = currentState.level)
                 _gameState.value = currentState.copy(
-                    grid = grid,
                     isGameActive = true,
                     gameResult = null,
                     timeRemaining = 10,
