@@ -15,14 +15,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.example.spottheshade.navigation.Screen
+import com.example.spottheshade.viewmodel.GameViewModel
+import com.example.spottheshade.viewmodel.GameViewModelFactory
+import com.example.spottheshade.data.model.UserPreferences
 
 @Composable
 fun GameOverScreen(
     navController: NavHostController,
     finalScore: Int,
-    finalLevel: Int
+    finalLevel: Int,
+    viewModel: GameViewModel = viewModel(factory = GameViewModelFactory(LocalContext.current))
 ) {
+    val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
+    val isNewHighScore = finalScore > userPreferences.highScore
+    val isNewHighLevel = finalLevel > userPreferences.highestLevel
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -36,27 +47,74 @@ fun GameOverScreen(
         )
         
         Text(
-            text = "Final Score",
+            text = if (isNewHighScore) "🎉 NEW HIGH SCORE! 🎉" else "Final Score",
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = 8.dp),
+            color = if (isNewHighScore) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = "$finalScore",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp),
-            fontWeight = FontWeight.Bold
+            modifier = Modifier.padding(bottom = 8.dp),
+            fontWeight = FontWeight.Bold,
+            color = if (isNewHighScore) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
+        if (!isNewHighScore) {
+            Text(
+                text = "Previous High Score: ${userPreferences.highScore}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        } else {
+            Text(
+                text = "Previous: ${userPreferences.highScore}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
         
         Text(
-            text = "Highest Level Reached",
+            text = if (isNewHighLevel) "🏆 NEW LEVEL RECORD! 🏆" else "Highest Level Reached",
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = 8.dp),
+            color = if (isNewHighLevel) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = "Level $finalLevel",
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = 32.dp),
-            fontWeight = FontWeight.SemiBold
+            modifier = Modifier.padding(bottom = 8.dp),
+            fontWeight = FontWeight.SemiBold,
+            color = if (isNewHighLevel) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
+        )
+        if (!isNewHighLevel) {
+            Text(
+                text = "Previous Best: Level ${userPreferences.highestLevel}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        } else {
+            Text(
+                text = "Previous: Level ${userPreferences.highestLevel}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+        
+        // Game Statistics
+        Text(
+            text = "📊 Your Stats",
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+        )
+        Text(
+            text = "Games Played: ${userPreferences.totalGamesPlayed} • Correct Answers: ${userPreferences.totalCorrectAnswers}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(bottom = 32.dp)
         )
         
         Row(

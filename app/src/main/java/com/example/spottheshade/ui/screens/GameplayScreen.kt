@@ -25,6 +25,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import com.example.spottheshade.data.model.UserPreferences
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,19 +35,22 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.compose.ui.platform.LocalContext
 import com.example.spottheshade.data.model.GameResult
 import com.example.spottheshade.data.model.GridItem
 import com.example.spottheshade.navigation.Screen
 import com.example.spottheshade.ui.theme.SpotTheShadeTheme
 import com.example.spottheshade.viewmodel.GameViewModel
+import com.example.spottheshade.viewmodel.GameViewModelFactory
 import kotlin.math.sqrt
 
 @Composable
 fun GameplayScreen(
     navController: NavHostController,
-    viewModel: GameViewModel = viewModel()
+    viewModel: GameViewModel = viewModel(factory = GameViewModelFactory(LocalContext.current))
 ) {
     val gameState by viewModel.gameState.collectAsState()
+    val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
 
     // Start game when screen loads (use stable key)
     LaunchedEffect(key1 = true) {
@@ -136,6 +140,14 @@ fun GameplayScreen(
                 }
             }
         }
+
+        // High Score display
+        Text(
+            text = "High Score: ${userPreferences.highScore} • Best Level: ${userPreferences.highestLevel}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(top = 8.dp)
+        )
 
         // Timer with extra time indicator
         Column(

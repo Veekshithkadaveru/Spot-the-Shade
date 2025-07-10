@@ -30,4 +30,29 @@ enum class GameStatus {
     NOT_STARTED,
     PLAYING,
     GAME_OVER
+}
+
+// Data classes for persistence
+data class UserPreferences(
+    val highScore: Int = 0,
+    val highestLevel: Int = 1,
+    val unlockedThemes: Set<ThemeType> = setOf(ThemeType.DEFAULT),
+    val currentTheme: ThemeType = ThemeType.DEFAULT,
+    val soundEnabled: Boolean = true,
+    val totalGamesPlayed: Int = 0,
+    val totalCorrectAnswers: Int = 0
+)
+
+enum class ThemeType(val displayName: String) {
+    DEFAULT("Default"),
+    NEON("Neon"),
+    PASTEL("Pastel"),
+    RETRO("Retro"),
+    MONOCHROME("Monochrome")
+}
+
+enum class ShapeType {
+    CIRCLE,
+    SQUARE,
+    TRIANGLE
 } 
