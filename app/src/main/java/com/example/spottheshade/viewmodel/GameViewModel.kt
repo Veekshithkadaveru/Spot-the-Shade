@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.spottheshade.data.model.GameResult
 import com.example.spottheshade.data.model.GameState
+import com.example.spottheshade.data.model.ShapeType
 import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.data.repository.GridGenerator
 import com.example.spottheshade.data.repository.PreferencesManager
@@ -38,6 +39,7 @@ class GameViewModel(
             preferencesManager.incrementGamesPlayed()
             
             val grid = gridGenerator.generateGrid(level = 1)
+            val currentShape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
             _gameState.value = GameState(
                 grid = grid,
                 isGameActive = true,
@@ -46,7 +48,8 @@ class GameViewModel(
                 gameResult = null,
                 timeRemaining = 10,
                 hasUsedExtraTime = false,
-                lives = 3
+                lives = 3,
+                currentShape = currentShape
             )
             
             // Start countdown timer
@@ -61,12 +64,14 @@ class GameViewModel(
             timerJob?.cancel()
             
             val grid = gridGenerator.generateGrid(level = currentState.level)
+            val currentShape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
             _gameState.value = currentState.copy(
                 grid = grid,
                 isGameActive = true,
                 gameResult = null,
                 timeRemaining = 10,
-                hasUsedExtraTime = false
+                hasUsedExtraTime = false,
+                currentShape = currentShape
             )
             
             // Start countdown timer
@@ -137,12 +142,15 @@ class GameViewModel(
     fun useExtraTime() {
         val currentState = _gameState.value
         if (currentState.gameResult == GameResult.Timeout && !currentState.hasUsedExtraTime) {
+            // Restore the life that was lost due to timeout
+            val restoredLives = currentState.lives + 1
 
             _gameState.value = currentState.copy(
                 isGameActive = true,
                 gameResult = null,
                 timeRemaining = 5,
-                hasUsedExtraTime = true
+                hasUsedExtraTime = true,
+                lives = restoredLives
             )
 
             startTimer(5)
