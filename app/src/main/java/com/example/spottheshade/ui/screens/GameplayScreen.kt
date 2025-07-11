@@ -1,5 +1,6 @@
 package com.example.spottheshade.ui.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,9 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -25,19 +23,23 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.example.spottheshade.data.model.UserPreferences
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.compose.ui.platform.LocalContext
 import com.example.spottheshade.data.model.GameResult
-import com.example.spottheshade.data.model.GridItem
+import com.example.spottheshade.data.model.ShapeType
+import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.navigation.Screen
 import com.example.spottheshade.ui.theme.SpotTheShadeTheme
 import com.example.spottheshade.viewmodel.GameViewModel
@@ -56,7 +58,7 @@ fun GameplayScreen(
     LaunchedEffect(key1 = true) {
         viewModel.startGame()
     }
-    
+
     // Navigate to Game Over screen when game ends
     LaunchedEffect(gameState.gameResult) {
         if (gameState.gameResult == GameResult.GameOver) {
@@ -105,6 +107,17 @@ fun GameplayScreen(
                     text = difficulty,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary
+                )
+                // Show current shape
+                val shapeDisplay = when (gameState.currentShape) {
+                    ShapeType.CIRCLE -> "● Circles"
+                    ShapeType.SQUARE -> "■ Squares"
+                    ShapeType.TRIANGLE -> "▲ Triangles"
+                }
+                Text(
+                    text = shapeDisplay,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
             Column(
@@ -173,7 +186,7 @@ fun GameplayScreen(
             )
         }
 
-        // Game Grid (2x2)
+        // Game Grid with Dynamic Sizing
         if (gameState.grid.isNotEmpty()) {
             // Hide grid when timed out (but not when using extra time)
             val shouldHideGrid =
@@ -214,47 +227,39 @@ fun GameplayScreen(
                     }
                 }
             } else {
-                // Simple grid with good-looking circles
+                // Dynamic sizing based on grid size
                 val columns = sqrt(gameState.grid.size.toDouble()).toInt()
+                val maxGridDimension = 10
+                val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+                val shapePadding = 8.dp
 
-                // Calculate available screen width (assume 360dp typical width minus padding)
-                val availableWidth = 320.dp // Conservative estimate for most phones
-                val spacing = 8.dp * (columns - 1) // Total spacing between circles
-                val maxCircleSize = (availableWidth - spacing) / columns
-
-                // Finger-friendly circle sizes for the new progression
-                val idealSize = when {
-                    columns <= 3 -> 85.dp  // 2x2, 3x3: Large and comfortable 
-                    columns <= 4 -> 70.dp  // 4x4: Good size for long gameplay (8-20 levels)
-                    columns <= 6 -> 55.dp  // 5x5, 6x6: Medium grids, still very tappable
-                    columns <= 7 -> 45.dp  // 7x7: Smaller but comfortable
-                    else -> {
-                        // 8x8: Bigger circles for levels 91+ to help with difficult color recognition
-                        if (gameState.level >= 91) 48.dp else 38.dp
-                    }
+                val itemSize = remember(columns, gameState.currentShape) {
+                    val baseSize = ((screenWidth - (shapePadding * (columns + 1))) / columns).coerceAtMost(80.dp)
+                    // Scale down triangles slightly to match visual weight of circles/squares
+                    val triangleScaleFactor = 0.85f
+                    if (gameState.currentShape == ShapeType.TRIANGLE) baseSize * triangleScaleFactor else baseSize
                 }
-
-                val circleSize = minOf(idealSize, maxCircleSize)
 
                 // Create grid using nested Columns and Rows (no scrolling issues)
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(shapePadding),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(vertical = 16.dp)
                 ) {
                     for (row in 0 until columns) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(shapePadding)
                         ) {
                             for (col in 0 until columns) {
                                 val index = row * columns + col
                                 if (index < gameState.grid.size) {
                                     val item = gameState.grid[index]
-                                    GameCircle(
+                                    GameShape(
                                         color = item.color,
+                                        shape = item.shape,
                                         enabled = gameState.isGameActive,
                                         onClick = { viewModel.onGridItemTapped(item.id) },
-                                        size = circleSize
+                                        size = itemSize
                                     )
                                 }
                             }
@@ -283,6 +288,27 @@ fun GameplayScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text("You found the different shade!")
+
+                            // Show shape unlock notifications
+                            when (gameState.level) {
+                                10 -> {
+                                    Text(
+                                        text = "🎊 SQUARES UNLOCKED! 🎊",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+
+                                20 -> {
+                                    Text(
+                                        text = "🎊 TRIANGLES UNLOCKED! 🎊",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+                            }
                         }
 
                         is GameResult.Wrong -> {
@@ -302,7 +328,7 @@ fun GameplayScreen(
                             )
                             Text("You ran out of time!")
                         }
-                        
+
                         is GameResult.GameOver -> {
                             Text(
                                 text = "💀 Game Over!",
@@ -416,7 +442,7 @@ fun GameplayScreen(
                                 }
                             }
                         }
-                        
+
                         is GameResult.GameOver -> {
 
                         }
@@ -427,8 +453,13 @@ fun GameplayScreen(
 
         // Instructions
         if (gameState.isGameActive) {
+            val shapeInstruction = when (gameState.currentShape) {
+                ShapeType.CIRCLE -> "Find the circle with a different shade!"
+                ShapeType.SQUARE -> "Find the square with a different shade!"
+                ShapeType.TRIANGLE -> "Find the triangle with a different shade!"
+            }
             Text(
-                text = "Find the circle with a different shade!",
+                text = shapeInstruction,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 32.dp)
             )
@@ -437,74 +468,119 @@ fun GameplayScreen(
 }
 
 @Composable
-fun GameCircle(
+fun GameShape(
     color: Color,
+    shape: ShapeType,
     onClick: () -> Unit,
     enabled: Boolean,
     size: Dp = 80.dp
 ) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(color)
-            .clickable(enabled = enabled) { onClick() }
-    )
+    when (shape) {
+        ShapeType.CIRCLE -> {
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(color)
+                    .clickable(enabled = enabled) { onClick() }
+            )
+        }
+
+        ShapeType.SQUARE -> {
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .background(color)
+                    .clickable(enabled = enabled) { onClick() }
+            )
+        }
+
+        ShapeType.TRIANGLE -> {
+            Canvas(
+                modifier = Modifier
+                    .size(size)
+                    .clickable(enabled = enabled) { onClick() }
+            ) {
+                drawTriangle(color, size.toPx())
+            }
+        }
+    }
+}
+
+fun DrawScope.drawTriangle(color: Color, size: Float) {
+    val path = Path().apply {
+        // Create an equilateral triangle
+        val halfSize = size / 2f
+        val height = (size * 0.866f) // height of equilateral triangle
+        val yOffset = (size - height) / 2f // center vertically
+
+        moveTo(halfSize, yOffset) // top point
+        lineTo(0f, size - yOffset) // bottom left
+        lineTo(size, size - yOffset) // bottom right
+        close()
+    }
+    drawPath(path, color)
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GameGrid8x8Preview() {
+fun GameShapeVariationsPreview() {
     SpotTheShadeTheme {
-        // Create an 8x8 grid (64 items) with one different shade - levels 91+
-        val baseColor = Color.hsl(120f, 0.8f, 0.65f) // Green base color
-        val targetColor =
-            Color.hsl(120f, 0.8f, 0.62f) // Slightly darker green (subtle difference for high level)
-        val targetPosition = 28 // Position in the grid
-
-        val grid = List(64) { index ->
-            GridItem(
-                id = index,
-                color = if (index == targetPosition) targetColor else baseColor,
-                isTarget = index == targetPosition
-            )
-        }
-
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "8×8 Grid Preview (Level 91+)",
+                text = "Shape Variations Preview",
                 style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // 8x8 grid with enhanced size (like level 91+)
-            val columns = 8
-            val circleSize = 48.dp // Enhanced size for levels 91+
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(columns),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.size((circleSize * columns + 6.dp * (columns - 1)))
-            ) {
-                items(grid) { item ->
-                    Box(
-                        modifier = Modifier
-                            .size(circleSize)
-                            .clip(CircleShape)
-                            .background(item.color)
-                            .clickable { /* Preview - no action */ }
+            // Show different shapes with samples
+            val baseColor = Color.hsl(240f, 0.8f, 0.65f)
+            val targetColor = Color.hsl(240f, 0.8f, 0.55f)
+
+            // Circles (Level 1-9)
+            Text("Levels 1-9: Circles", style = MaterialTheme.typography.titleMedium)
+            Row(modifier = Modifier.padding(8.dp)) {
+                repeat(3) { index ->
+                    GameShape(
+                        color = if (index == 1) targetColor else baseColor,
+                        shape = ShapeType.CIRCLE,
+                        onClick = {},
+                        enabled = true,
+                        size = 60.dp
                     )
                 }
             }
 
-            Text(
-                text = "Find the circle with a different shade!",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 16.dp)
-            )
+            // Squares (Level 10-19)
+            Text("Levels 10-19: Squares", style = MaterialTheme.typography.titleMedium)
+            Row(modifier = Modifier.padding(8.dp)) {
+                repeat(3) { index ->
+                    GameShape(
+                        color = if (index == 2) targetColor else baseColor,
+                        shape = ShapeType.SQUARE,
+                        onClick = {},
+                        enabled = true,
+                        size = 60.dp
+                    )
+                }
+            }
+
+            // Triangles (Level 20+)
+            Text("Levels 20+: Triangles", style = MaterialTheme.typography.titleMedium)
+            Row(modifier = Modifier.padding(8.dp)) {
+                repeat(3) { index ->
+                    GameShape(
+                        color = if (index == 0) targetColor else baseColor,
+                        shape = ShapeType.TRIANGLE,
+                        onClick = {},
+                        enabled = true,
+                        size = 60.dp
+                    )
+                }
+            }
         }
     }
 }

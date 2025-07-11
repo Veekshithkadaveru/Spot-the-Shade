@@ -2,6 +2,7 @@ package com.example.spottheshade.data.repository
 
 import androidx.compose.ui.graphics.Color
 import com.example.spottheshade.data.model.GridItem
+import com.example.spottheshade.data.model.ShapeType
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
@@ -19,6 +20,13 @@ class GridGenerator {
             else -> 8           // Levels 91+: 8x8 (max)
         }
         val total = size * size
+        
+        // Determine shape based on level
+        val shape = when {
+            level <= 9 -> ShapeType.CIRCLE      // Levels 1-9: Circle
+            level <= 19 -> ShapeType.SQUARE     // Levels 10-19: Square  
+            else -> ShapeType.TRIANGLE          // Levels 20+: Triangle
+        }
         
         // Generate random HSL color for each round with better parameters
         val hue = Random.nextFloat() * 360
@@ -43,7 +51,8 @@ class GridGenerator {
             GridItem(
                 id = index,
                 color = if (index == targetPosition) targetColor else baseColor,
-                isTarget = index == targetPosition
+                isTarget = index == targetPosition,
+                shape = shape
             )
         }
     }

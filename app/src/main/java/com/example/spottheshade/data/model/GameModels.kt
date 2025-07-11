@@ -5,7 +5,8 @@ import androidx.compose.ui.graphics.Color
 data class GridItem(
     val id: Int,
     val color: Color,
-    val isTarget: Boolean
+    val isTarget: Boolean,
+    val shape: ShapeType = ShapeType.CIRCLE
 )
 
 data class GameState(
@@ -16,7 +17,8 @@ data class GameState(
     val gameResult: GameResult? = null,
     val timeRemaining: Int = 10,
     val hasUsedExtraTime: Boolean = false,
-    val lives: Int = 3
+    val lives: Int = 3,
+    val currentShape: ShapeType = ShapeType.CIRCLE
 )
 
 sealed class GameResult {
