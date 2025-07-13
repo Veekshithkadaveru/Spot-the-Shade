@@ -10,15 +10,25 @@ import com.example.spottheshade.data.model.ShapeType
 import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.data.repository.GridGenerator
 import com.example.spottheshade.data.repository.PreferencesManager
+import com.example.spottheshade.data.repository.SoundManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
+sealed class GameUiEvent {
+    data class CorrectTap(val itemId: Int) : GameUiEvent()
+    data class IncorrectTap(val itemId: Int) : GameUiEvent()
+    object ShakeGrid : GameUiEvent()
+}
 
 class GameViewModel(
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val soundManager: SoundManager
 ) : ViewModel() {
     
     private val gridGenerator = GridGenerator()
@@ -26,6 +36,9 @@ class GameViewModel(
     
     private val _gameState = MutableStateFlow(GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
+
+    private val _uiEvents = MutableSharedFlow<GameUiEvent>()
+    val uiEvents = _uiEvents.asSharedFlow()
     
     // Expose user preferences as StateFlow
     val userPreferences = preferencesManager.userPreferences
@@ -92,6 +105,8 @@ class GameViewModel(
             // Time's up!
             val currentState = _gameState.value
             if (currentState.isGameActive) {
+                soundManager.playTimeoutSound()
+                delay(300) // Delay to ensure sound plays before UI changes
                 handleLifeLoss(GameResult.Timeout)
             }
         }
@@ -100,34 +115,47 @@ class GameViewModel(
     fun onGridItemTapped(itemId: Int) {
         val currentState = _gameState.value
         if (!currentState.isGameActive) return
-        
+
         // Stop the timer since user made a selection
         timerJob?.cancel()
 
-         val tappedItem = currentState.grid.find { it.id == itemId }
-         if (tappedItem == null) return
-         if (tappedItem.isTarget) {
-             // Correct selection! Progress to next level
-             val newLevel = currentState.level + 1
-             val newScore = currentState.score + (10 * currentState.level)
+        val tappedItem = currentState.grid.find { it.id == itemId }
+        if (tappedItem == null) return
 
-             viewModelScope.launch {
-                 // Update persistent data
-                 preferencesManager.incrementCorrectAnswers()
-                 preferencesManager.updateHighScore(newScore)
-                 preferencesManager.updateHighestLevel(newLevel)
-             }
+        viewModelScope.launch {
+            if (tappedItem.isTarget) {
+                // Correct selection! Progress to next level
+                _uiEvents.emit(GameUiEvent.CorrectTap(itemId))
+                soundManager.playCorrectSound()
+                
+                val currentState = _gameState.value // get latest state
+                val newLevel = currentState.level + 1
+                val newScore = currentState.score + (10 * currentState.level)
 
-             _gameState.value = currentState.copy(
-                 gameResult = GameResult.Correct,
-                 score = newScore,
-                 level = newLevel,
-                 isGameActive = false
-             )
-         } else {
-             // Wrong selection!
-             handleLifeLoss(GameResult.Wrong)
-         }
+                // Update persistent data
+                preferencesManager.incrementCorrectAnswers()
+                preferencesManager.updateHighScore(newScore)
+                preferencesManager.updateHighestLevel(newLevel)
+
+                // Update state for score and level, but don't pause
+                _gameState.value = currentState.copy(
+                    score = newScore,
+                    level = newLevel
+                )
+
+                // Wait for animation, then proceed
+                delay(400)
+                nextLevel()
+
+            } else {
+                // Wrong selection!
+                _uiEvents.emit(GameUiEvent.IncorrectTap(itemId))
+                _uiEvents.emit(GameUiEvent.ShakeGrid)
+                soundManager.playWrongSound()
+                delay(500) // Allow animation to play
+                handleLifeLoss(GameResult.Wrong)
+            }
+        }
     }
     
     fun resetGame() {
@@ -157,34 +185,51 @@ class GameViewModel(
         }
     }
     
-    private fun handleLifeLoss(resultType: GameResult) {
+    private suspend fun handleLifeLoss(resultType: GameResult) {
         val currentState = _gameState.value
         val newLives = currentState.lives - 1
-        
-        if (newLives <= 0) {
-            // Game Over - save final score and level
-            viewModelScope.launch {
-                preferencesManager.updateHighScore(currentState.score)
-                preferencesManager.updateHighestLevel(currentState.level)
-            }
-            
+
+        if (newLives < 0) {
+            // This should not happen, but as a safeguard:
+            endGame()
+            return
+        }
+
+        _gameState.value = currentState.copy(
+            gameResult = resultType,
+            isGameActive = false,
+            lives = newLives,
+            timeRemaining = if (resultType == GameResult.Timeout) 0 else currentState.timeRemaining
+        )
+    }
+
+    fun declineExtraTime() {
+        val currentState = _gameState.value
+        if (currentState.lives > 0) {
+            _gameState.value = currentState.copy(gameResult = GameResult.OfferContinue)
+        } else {
+            endGame()
+        }
+    }
+
+    fun endGame() {
+        val currentState = _gameState.value
+        viewModelScope.launch {
+            preferencesManager.updateHighScore(currentState.score)
+            preferencesManager.updateHighestLevel(currentState.level)
+
+            soundManager.playGameOverSound()
+            delay(300)
+
             _gameState.value = currentState.copy(
                 gameResult = GameResult.GameOver,
                 isGameActive = false,
                 lives = 0,
                 timeRemaining = 0
             )
-        } else {
-            // Still have lives - show result but keep going
-            _gameState.value = currentState.copy(
-                gameResult = resultType,
-                isGameActive = false,
-                lives = newLives,
-                timeRemaining = if (resultType == GameResult.Timeout) 0 else currentState.timeRemaining
-            )
         }
     }
-    
+
     // Add function to continue after losing a life
     fun continueAfterLifeLoss() {
         val currentState = _gameState.value
@@ -204,6 +249,15 @@ class GameViewModel(
             }
         }
     }
+    
+    fun setSoundEnabled(enabled: Boolean) {
+        soundManager.setSoundEnabled(enabled)
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        soundManager.release()
+    }
 
 }
 
@@ -214,7 +268,10 @@ class GameViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(GameViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return GameViewModel(PreferencesManager(context)) as T
+            return GameViewModel(
+                PreferencesManager(context),
+                SoundManager(context)
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

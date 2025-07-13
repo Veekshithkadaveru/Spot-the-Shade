@@ -25,6 +25,7 @@ sealed class GameResult {
     object Correct : GameResult()
     object Wrong : GameResult()
     object Timeout : GameResult()
+    object OfferContinue : GameResult()
     object GameOver : GameResult() // When all lives are lost
 }
 
