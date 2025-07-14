@@ -11,6 +11,7 @@ import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.data.repository.GridGenerator
 import com.example.spottheshade.data.repository.PreferencesManager
 import com.example.spottheshade.data.repository.SoundManager
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import javax.inject.Inject
 
 sealed class GameUiEvent {
     data class CorrectTap(val itemId: Int) : GameUiEvent()
@@ -26,7 +28,8 @@ sealed class GameUiEvent {
     object ShakeGrid : GameUiEvent()
 }
 
-class GameViewModel(
+@HiltViewModel
+class GameViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager,
     private val soundManager: SoundManager
 ) : ViewModel() {
@@ -260,30 +263,15 @@ class GameViewModel(
             }
         }
     }
-    
+
     fun setSoundEnabled(enabled: Boolean) {
         soundManager.setSoundEnabled(enabled)
     }
-    
+
     override fun onCleared() {
         super.onCleared()
         soundManager.release()
     }
-
 }
 
-// ViewModelFactory to inject PreferencesManager
-class GameViewModelFactory(
-    private val context: Context
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(GameViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return GameViewModel(
-                PreferencesManager(context),
-                SoundManager(context)
-            ) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-} 
+ 

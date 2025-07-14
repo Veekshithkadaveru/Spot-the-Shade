@@ -13,19 +13,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.example.spottheshade.navigation.Screen
 import com.example.spottheshade.viewmodel.GameViewModel
-import com.example.spottheshade.viewmodel.GameViewModelFactory
 import com.example.spottheshade.data.model.UserPreferences
 
 @Composable
 fun MainMenuScreen(
     navController: NavHostController,
-    viewModel: GameViewModel = viewModel(factory = GameViewModelFactory(LocalContext.current))
+    viewModel: GameViewModel = hiltViewModel()
 ) {
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     Column(

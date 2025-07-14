@@ -7,10 +7,15 @@ import android.media.SoundPool
 import com.example.spottheshade.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class SoundManager(private val context: Context) {
+@Singleton
+class SoundManager @Inject constructor(
+    private val context: Context,
+    private val scope: CoroutineScope
+) {
     
     private var soundEnabled = true
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -32,10 +37,15 @@ class SoundManager(private val context: Context) {
     }
 
     private fun loadSounds() {
-        soundMap[SoundType.CORRECT] = soundPool.load(context, R.raw.correct_sound, 1)
-        soundMap[SoundType.WRONG] = soundPool.load(context, R.raw.wrong_sound, 1)
-        soundMap[SoundType.TIMEOUT] = soundPool.load(context, R.raw.timeout_sound, 1)
-        soundMap[SoundType.GAME_OVER] = soundPool.load(context, R.raw.game_over_sound, 1)
+        try {
+            soundMap[SoundType.CORRECT] = soundPool.load(context, R.raw.correct_sound, 1)
+            soundMap[SoundType.WRONG] = soundPool.load(context, R.raw.wrong_sound, 1)
+            soundMap[SoundType.TIMEOUT] = soundPool.load(context, R.raw.timeout_sound, 1)
+            soundMap[SoundType.GAME_OVER] = soundPool.load(context, R.raw.game_over_sound, 1)
+        } catch (e: Exception) {
+            // Log this error, e.g., using Log.e("SoundManager", "Error loading sounds", e)
+            e.printStackTrace()
+        }
     }
 
     private fun playSound(soundType: SoundType, volume: Float = 1.0f, rate: Float = 1.0f) {
@@ -44,7 +54,7 @@ class SoundManager(private val context: Context) {
         val streamVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         if (streamVolume == 0) return
 
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch(Dispatchers.IO) {
             soundMap[soundType]?.let { soundId ->
                 soundPool.play(soundId, volume, volume, 1, 0, rate)
             }
