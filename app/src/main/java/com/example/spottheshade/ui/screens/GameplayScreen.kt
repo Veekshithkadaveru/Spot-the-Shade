@@ -184,7 +184,7 @@ fun GameplayScreen(
             targetState = gameState.level,
             transitionSpec = {
                 (fadeIn(animationSpec = tween(300)) + scaleIn(animationSpec = tween(400))) togetherWith
-                        fadeOut(animationSpec = tween(300))
+                fadeOut(animationSpec = tween(300))
             },
             label = "gridTransition"
         ) { currentLevel ->
@@ -211,15 +211,15 @@ fun GameplayScreen(
                                 onTapped = {
                                     if (gameState.isGameActive) {
                                         viewModel.onGridItemTapped(item.id)
-                                    }
                                 }
+                            }
                             )
                         }
                     }
                 }
             }
         }
-    }
+        }
 
     // Show result overlay
     GameResultOverlay(
@@ -244,12 +244,12 @@ fun TopInfoPanel(
     hasUsedExtraTime: Boolean
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
             .padding(bottom = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
-    ) {
+            ) {
         Column(horizontalAlignment = Alignment.Start) {
             Text(
                 text = "Level: $level",
@@ -280,13 +280,13 @@ fun TopInfoPanel(
                 },
                 label = "score"
             ) { targetScore ->
-                Text(
+                            Text(
                     text = "Score: $targetScore",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
             }
-            Text(
+                                    Text(
                 text = "Best: $highScore",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary
@@ -317,14 +317,14 @@ fun TopInfoPanel(
                         animationSpec = tween(500),
                         label = "heart"
                     ) { isFilled ->
-                        Text(
+                                    Text(
                             text = if (isFilled) "❤️" else "🤍",
-                            style = MaterialTheme.typography.titleMedium,
+                                        style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(end = 4.dp)
-                        )
-                    }
-                }
-            }
+                                    )
+                                }
+                            }
+                        }
         }
         
         // Timer with pulse animation when time is low
@@ -342,7 +342,7 @@ fun TopInfoPanel(
             1f
         }
 
-        Text(
+                            Text(
             text = "Time: ${timeRemaining}s",
             style = MaterialTheme.typography.titleLarge,
             color = when {
@@ -384,7 +384,7 @@ fun StaggeredGrid(
                 if ((index + 1) % columns == 0) {
                     x = 0
                     y += height
-                } else {
+                                        } else {
                     x += itemWidth
                 }
             }
@@ -412,9 +412,9 @@ fun GridItem(
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawShape(item.shape, item.color, size.minDimension)
-        }
-    }
-}
+                                            }
+                                        }
+                                    }
 
 @Composable
 fun GameResultOverlay(
@@ -466,8 +466,8 @@ fun GameResultOverlay(
                                 modifier = Modifier.padding(top = 16.dp)
                             ) {
                                 Text("Try Again")
-                            }
-                        }
+                                    }
+                                }
                         GameResult.Timeout -> {
                             Text(
                                 text = "Watch an ad for 5 extra seconds?",
@@ -501,7 +501,7 @@ fun GameResultOverlay(
                             ) {
                                 Button(onClick = onContinue) {
                                     Text("Continue")
-                                }
+                                    }
                                 Button(
                                     onClick = onGoToMenu,
                                     modifier = Modifier.padding(start = 16.dp)
@@ -560,9 +560,9 @@ fun DrawScope.drawShape(shape: ShapeType, color: Color, size: Float) {
                 moveTo(offset + scaledSize / 2f, offset) // Top center
                 lineTo(offset + scaledSize, offset + scaledSize) // Bottom right
                 lineTo(offset, offset + scaledSize) // Bottom left
-                close()
-            }
-            drawPath(path, color)
+        close()
+    }
+    drawPath(path, color)
         }
     }
 }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class SoundManager(private val context: Context) {
-
+    
     private var soundEnabled = true
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val soundPool: SoundPool
@@ -50,36 +50,36 @@ class SoundManager(private val context: Context) {
             }
         }
     }
-
+    
     fun playCorrectSound() {
         playSound(SoundType.CORRECT)
     }
-
+    
     fun playWrongSound() {
         playSound(SoundType.WRONG, volume = 0.8f)
     }
-
+    
     fun playTimeoutSound() {
         playSound(SoundType.TIMEOUT, volume = 0.7f, rate = 1.2f)
     }
-
+    
     fun playGameOverSound() {
         playSound(SoundType.GAME_OVER)
     }
-
+    
     fun setSoundEnabled(enabled: Boolean) {
         soundEnabled = enabled
     }
-
+    
     fun isSoundEnabled(): Boolean = soundEnabled
-
+    
     fun release() {
         soundPool.release()
     }
-
+    
     enum class SoundType {
         CORRECT,
-        WRONG,
+        WRONG, 
         TIMEOUT,
         GAME_OVER
     }
