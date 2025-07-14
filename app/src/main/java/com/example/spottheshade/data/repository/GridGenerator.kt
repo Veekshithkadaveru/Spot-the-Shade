@@ -4,49 +4,66 @@ import androidx.compose.ui.graphics.Color
 import com.example.spottheshade.data.model.GridItem
 import com.example.spottheshade.data.model.ShapeType
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.random.Random
+import com.example.spottheshade.data.model.Difficulty
 
 class GridGenerator {
-    
-    fun generateGrid(level: Int): List<GridItem> {
-        val size = when {
-            level <= 3 -> 2     // Levels 1-3: 2x2
-            level <= 7 -> 3     // Levels 4-7: 3x3  
-            level <= 20 -> 4    // Levels 8-20: 4x4
-            level <= 40 -> 5    // Levels 21-40: 5x5
-            level <= 65 -> 6    // Levels 41-65: 6x6
-            level <= 90 -> 7    // Levels 66-90: 7x7
-            else -> 8           // Levels 91+: 8x8 (max)
-        }
-        val total = size * size
-        
-        // Determine shape based on level
-        val shape = when {
-            level <= 9 -> ShapeType.CIRCLE      // Levels 1-9: Circle
-            level <= 19 -> ShapeType.SQUARE     // Levels 10-19: Square  
-            else -> ShapeType.TRIANGLE          // Levels 20+: Triangle
-        }
-        
-        // Generate random HSL color for each round with better parameters
-        val hue = Random.nextFloat() * 360
-        val saturation = 0.6f + Random.nextFloat() * 0.3f
-        val baseLight = 0.45f + Random.nextFloat() * 0.3f
 
-        val diff = when {
-            level <= 10 -> 0.08f // Easy: Levels 1-10 - very noticeable difference
-            level <= 25 -> 0.05f - (level - 10) * 0.001f // Medium: 0.05 → 0.035
-            level <= 40 -> 0.025f - (level - 25) * 0.0007f // Hard: 0.025 → 0.015
-            level <= 55 -> 0.015f - (level - 40) * 0.0005f // Expert: 0.015 → 0.0075
-            level <= 70 -> 0.0075f - (level - 55) * 0.0002f // Master: 0.0075 → 0.0045
-            else -> max(0.003f, 0.0045f - (level - 70) * 0.0001f) // Legendary: 0.0045 → 0.003
-        }
+    companion object {
+        private const val MAX_GRID_SIZE = 8
         
+        private val GRID_SIZE_LEVELS = listOf(
+            3 to 2, 7 to 3, 20 to 4, 40 to 5, 65 to 6, 90 to 7
+        )
+        
+        private val SHAPE_LEVELS = listOf(
+            9 to ShapeType.CIRCLE, 19 to ShapeType.SQUARE
+        )
+        
+        private const val MIN_SATURATION = 0.6f
+        private const val MAX_SATURATION = 0.9f
+        private const val MIN_LIGHTNESS = 0.45f
+        private const val MAX_LIGHTNESS = 0.75f
+
+        private val COLOR_DIFFICULTY_LEVELS = listOf(
+            10 to 0.08f,
+            25 to 0.05f,
+            40 to 0.025f,
+            55 to 0.015f,
+            70 to 0.0075f
+        )
+        private const val LEGENDARY_DIFFICULTY_START_LEVEL = 70
+        private const val LEGENDARY_DIFFICULTY_BASE = 0.0045f
+        private const val LEGENDARY_DIFFICULTY_FACTOR = 0.0001f
+        private const val MIN_DIFFICULTY = 0.003f
+    }
+
+    fun getDifficulty(level: Int): Difficulty = when {
+        level <= 10 -> Difficulty.EASY
+        level <= 25 -> Difficulty.MEDIUM
+        level <= 40 -> Difficulty.HARD
+        level <= 55 -> Difficulty.EXPERT
+        level <= 70 -> Difficulty.MASTER
+        else -> Difficulty.LEGENDARY
+    }
+
+    fun generateGrid(level: Int): List<GridItem> {
+        val size = GRID_SIZE_LEVELS.firstOrNull { level <= it.first }?.second ?: MAX_GRID_SIZE
+        val total = size * size
+
+        val shape = SHAPE_LEVELS.firstOrNull { level <= it.first }?.second ?: ShapeType.TRIANGLE
+
+        val hue = Random.nextFloat() * 360
+        val saturation = MIN_SATURATION + Random.nextFloat() * (MAX_SATURATION - MIN_SATURATION)
+        val baseLight = MIN_LIGHTNESS + Random.nextFloat() * (MAX_LIGHTNESS - MIN_LIGHTNESS)
+
+        val diff = calculateColorDifference(level)
+
         val baseColor = Color.hsl(hue, saturation, baseLight)
         val targetColor = Color.hsl(hue, saturation, baseLight - diff)
-        
+
         val targetPosition = Random.nextInt(total)
-        
+
         return List(total) { index ->
             GridItem(
                 id = index,
@@ -57,8 +74,20 @@ class GridGenerator {
         }
     }
 
-    @Deprecated("Use generateGrid(level) instead")
-    fun generate2x2Grid(): List<GridItem> {
-        return generateGrid(level = 1)
+    private fun calculateColorDifference(level: Int): Float {
+        COLOR_DIFFICULTY_LEVELS.forEachIndexed { index, (maxLevel, baseDiff) ->
+            if (level <= maxLevel) {
+                val prevMaxLevel = if (index > 0) COLOR_DIFFICULTY_LEVELS[index - 1].first else 0
+                val levelInRange = level - prevMaxLevel
+                val prevBaseDiff = if (index > 0) COLOR_DIFFICULTY_LEVELS[index-1].second else baseDiff + (levelInRange * 0.001f)
+                val factor = (baseDiff - prevBaseDiff) / (maxLevel - prevMaxLevel)
+                return prevBaseDiff + levelInRange * factor
+            }
+        }
+
+        return max(
+            MIN_DIFFICULTY,
+            LEGENDARY_DIFFICULTY_BASE - (level - LEGENDARY_DIFFICULTY_START_LEVEL) * LEGENDARY_DIFFICULTY_FACTOR
+        )
     }
 } 

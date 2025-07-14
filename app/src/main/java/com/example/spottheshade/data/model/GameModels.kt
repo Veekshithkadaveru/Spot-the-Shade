@@ -6,36 +6,29 @@ data class GridItem(
     val id: Int,
     val color: Color,
     val isTarget: Boolean,
-    val shape: ShapeType = ShapeType.CIRCLE
+    val shape: ShapeType
 )
 
 data class GameState(
     val grid: List<GridItem> = emptyList(),
-    val isGameActive: Boolean = false,
     val score: Int = 0,
     val level: Int = 1,
-    val gameResult: GameResult? = null,
-    val timeRemaining: Int = 10,
-    val hasUsedExtraTime: Boolean = false,
     val lives: Int = 3,
+    val timeRemaining: Int = 10,
+    val isGameActive: Boolean = false,
+    val gameResult: GameResult? = null,
+    val hasUsedExtraTime: Boolean = false,
     val currentShape: ShapeType = ShapeType.CIRCLE
 )
 
-sealed class GameResult {
-    object Correct : GameResult()
-    object Wrong : GameResult()
-    object Timeout : GameResult()
-    object OfferContinue : GameResult()
-    object GameOver : GameResult() // When all lives are lost
+enum class ShapeType {
+    CIRCLE, SQUARE, TRIANGLE
 }
 
-enum class GameStatus {
-    NOT_STARTED,
-    PLAYING,
-    GAME_OVER
+enum class GameResult {
+    Wrong, Timeout, GameOver, OfferContinue
 }
 
-// Data classes for persistence
 data class UserPreferences(
     val highScore: Int = 0,
     val highestLevel: Int = 1,
@@ -46,16 +39,18 @@ data class UserPreferences(
     val totalCorrectAnswers: Int = 0
 )
 
-enum class ThemeType(val displayName: String) {
-    DEFAULT("Default"),
-    NEON("Neon"),
-    PASTEL("Pastel"),
-    RETRO("Retro"),
-    MONOCHROME("Monochrome")
+enum class ThemeType {
+    DEFAULT,
+    FOREST,
+    OCEAN,
+    SUNSET
 }
 
-enum class ShapeType {
-    CIRCLE,
-    SQUARE,
-    TRIANGLE
+enum class Difficulty(val label: String) {
+    EASY("Easy"),
+    MEDIUM("Medium"),
+    HARD("Hard"),
+    EXPERT("Expert"),
+    MASTER("Master"),
+    LEGENDARY("Legendary")
 } 
