@@ -9,14 +9,19 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -38,6 +45,9 @@ import com.example.spottheshade.ui.screens.components.GridItem
 import com.example.spottheshade.ui.screens.components.StaggeredGrid
 import com.example.spottheshade.ui.screens.components.TopInfoPanel
 import com.example.spottheshade.ui.screens.components.calculateGridAndItemSize
+import com.example.spottheshade.ui.theme.GradientGreen
+import com.example.spottheshade.ui.theme.GradientOrange
+import com.example.spottheshade.ui.theme.GradientYellow
 import com.example.spottheshade.viewmodel.GameUiEvent
 import com.example.spottheshade.viewmodel.GameViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -129,14 +139,30 @@ fun GameplayScreen(
         }
     }
 
-    Column(
+    // Gradient background colors similar to other screens
+    val gradientColors = listOf(
+        GradientOrange,
+        GradientYellow,
+        GradientGreen
+    )
+    
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(
+                brush = Brush.verticalGradient(gradientColors)
+            )
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+        // Add some top spacing
+        Spacer(modifier = Modifier.height(32.dp))
+        
         // Score, Level, and Timer
         TopInfoPanel(
             level = gameState.level,
@@ -146,7 +172,15 @@ fun GameplayScreen(
             timeRemaining = gameState.timeRemaining,
         )
 
-        // Game Grid with Dynamic Sizing and Transitions
+        // Center the grid in the remaining space
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(vertical = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Game Grid with Dynamic Sizing and Transitions
         AnimatedContent(
             targetState = gameState.grid,
             transitionSpec = {
@@ -159,10 +193,15 @@ fun GameplayScreen(
                 val columns = sqrt(currentGrid.size.toDouble()).toInt()
                 val (gridSize, itemSize) = calculateGridAndItemSize(columns)
 
-                // Grid container with shake animation
+                // Grid container with shake animation and game-like styling
                 Box(
                     modifier = Modifier
                         .size(gridSize)
+                        .background(
+                            color = Color.White.copy(alpha = 0.8f),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .padding(12.dp)
                         .graphicsLayer {
                             translationX = gridShakeAnimation.value
                         }
@@ -185,8 +224,10 @@ fun GameplayScreen(
                     }
                 }
             }
+            }
         }
         }
+    }
 
     // Show result overlay
     GameResultOverlay(

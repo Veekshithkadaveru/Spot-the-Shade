@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 sealed class GameUiEvent {
@@ -240,7 +241,8 @@ class GameViewModel @Inject constructor(
                 gameResult = GameResult.GameOver,
                 isGameActive = false,
                 lives = 0,
-                timeRemaining = 0
+                timeRemaining = 0,
+                lastEndingReason = currentState.gameResult
             )
         }
     }
@@ -266,6 +268,15 @@ class GameViewModel @Inject constructor(
 
     fun setSoundEnabled(enabled: Boolean) {
         soundManager.setSoundEnabled(enabled)
+    }
+    
+    fun toggleSound() {
+        viewModelScope.launch {
+            val currentPrefs = preferencesManager.userPreferences.first()
+            val newSoundState = !currentPrefs.soundEnabled
+            soundManager.setSoundEnabled(newSoundState)
+            preferencesManager.setSoundEnabled(newSoundState)
+        }
     }
 
     override fun onCleared() {
