@@ -1,13 +1,20 @@
 package com.example.spottheshade.ui.screens.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -19,6 +26,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.spottheshade.data.model.ShapeType
+import kotlinx.coroutines.launch
 
 @Composable
 fun StaggeredGrid(
@@ -62,15 +70,29 @@ fun GridItem(
     scale: Float,
     onTapped: () -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val pressScale = remember { Animatable(1f) }
+
     Box(
         modifier = Modifier
             .size(itemSize)
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+                val combinedScale = scale * pressScale.value
+                scaleX = combinedScale
+                scaleY = combinedScale
             }
             .clip(CircleShape)
-            .clickable(onClick = onTapped)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null, // No ripple effect
+                onClick = {
+                    onTapped()
+                    coroutineScope.launch {
+                        pressScale.animateTo(0.8f, animationSpec = tween(100))
+                        pressScale.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessLow))
+                    }
+                }
+            )
             .padding(4.dp)
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -86,7 +108,7 @@ fun calculateGridAndItemSize(columns: Int): Pair<Dp, Dp> {
     val gridPadding = 32.dp // Total padding for the grid on screen
     val availableWidth = screenWidth - gridPadding
 
-    val itemPadding = 4.dp * 2 // Padding inside each grid item
+    val itemPadding = 4.dp * 2
     val maxItemSize = (availableWidth / columns) - itemPadding
 
     // Dynamically adjust size based on level progression
@@ -114,14 +136,14 @@ fun DrawScope.drawShape(shape: ShapeType, color: Color, size: Float) {
             drawRect(color, size = androidx.compose.ui.geometry.Size(size, size))
         }
         ShapeType.TRIANGLE -> {
-            val scale = 0.85f // Visually scale down triangle
+            val scale = 0.85f
             val scaledSize = size * scale
             val offset = (size - scaledSize) / 2f
 
             val path = Path().apply {
-                moveTo(offset + scaledSize / 2f, offset) // Top center
-                lineTo(offset + scaledSize, offset + scaledSize) // Bottom right
-                lineTo(offset, offset + scaledSize) // Bottom left
+                moveTo(offset + scaledSize / 2f, offset)
+                lineTo(offset + scaledSize, offset + scaledSize)
+                lineTo(offset, offset + scaledSize)
                 close()
             }
             drawPath(path, color)

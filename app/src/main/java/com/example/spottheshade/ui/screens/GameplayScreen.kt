@@ -10,7 +10,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,8 +19,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -63,7 +62,6 @@ fun GameplayScreen(
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val coroutineScope = rememberCoroutineScope()
 
-    // Animation states
     val gridShakeAnimation = remember { Animatable(0f) }
     val itemAnimations = remember { mutableMapOf<Int, Animatable<Float, AnimationVector1D>>() }
 
@@ -93,6 +91,7 @@ fun GameplayScreen(
                         }
                     }
                 }
+
                 is GameUiEvent.IncorrectTap -> {
                     itemAnimations[event.itemId]?.let { animatable ->
                         coroutineScope.launch {
@@ -101,6 +100,7 @@ fun GameplayScreen(
                         }
                     }
                 }
+
                 is GameUiEvent.ShakeGrid -> {
                     coroutineScope.launch {
                         gridShakeAnimation.animateTo(15f, tween(50))
@@ -119,12 +119,11 @@ fun GameplayScreen(
     LaunchedEffect(gameState.gameResult) {
         if (gameState.gameResult == GameResult.GameOver) {
             navController.navigate(Screen.GameOver.createRoute(gameState.score, gameState.level)) {
-                // Clear the back stack so user can't go back to gameplay
                 popUpTo(Screen.MainMenu.route) { inclusive = false }
             }
         }
     }
-    
+
     // Show score popup on correct answer
     LaunchedEffect(gameState.score) {
         if (gameState.score > 0) {
@@ -145,7 +144,7 @@ fun GameplayScreen(
         GradientYellow,
         GradientGreen
     )
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -160,76 +159,75 @@ fun GameplayScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-        // Add some top spacing
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // Score, Level, and Timer
-        TopInfoPanel(
-            level = gameState.level,
-            score = gameState.score,
-            lives = gameState.lives,
-            highScore = userPreferences.highScore,
-            timeRemaining = gameState.timeRemaining,
-        )
 
-        // Center the grid in the remaining space
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(vertical = 16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            // Game Grid with Dynamic Sizing and Transitions
-        AnimatedContent(
-            targetState = gameState.grid,
-            transitionSpec = {
-                (fadeIn(animationSpec = tween(300)) + scaleIn(animationSpec = tween(400))) togetherWith
-                fadeOut(animationSpec = tween(300))
-            },
-            label = "gridTransition"
-        ) { currentGrid ->
-            if (currentGrid.isNotEmpty()) {
-                val columns = sqrt(currentGrid.size.toDouble()).toInt()
-                val (gridSize, itemSize) = calculateGridAndItemSize(columns)
+            Spacer(modifier = Modifier.height(32.dp))
 
-                // Grid container with shake animation and game-like styling
-                Box(
-                    modifier = Modifier
-                        .size(gridSize)
-                        .background(
-                            color = Color.White.copy(alpha = 0.8f),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                        .padding(12.dp)
-                        .graphicsLayer {
-                            translationX = gridShakeAnimation.value
-                        }
-                ) {
-                    // Grid content
-                    StaggeredGrid(columns = columns) {
-                        currentGrid.forEach { item ->
-                            val scale = itemAnimations[item.id]?.value ?: 1f
-                            GridItem(
-                                item = item,
-                                itemSize = itemSize,
-                                scale = scale,
-                                onTapped = {
-                                    if (gameState.isGameActive) {
-                                        viewModel.onGridItemTapped(item.id)
+            // Score, Level, and Timer
+            TopInfoPanel(
+                level = gameState.level,
+                score = gameState.score,
+                lives = gameState.lives,
+                highScore = userPreferences.highScore,
+                timeRemaining = gameState.timeRemaining,
+            )
+
+            // Center the grid in the remaining space
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // Game Grid with Dynamic Sizing and Transitions
+                AnimatedContent(
+                    targetState = gameState.grid,
+                    transitionSpec = {
+                        (fadeIn(animationSpec = tween(300)) + scaleIn(animationSpec = tween(400))) togetherWith
+                                fadeOut(animationSpec = tween(300))
+                    },
+                    label = "gridTransition"
+                ) { currentGrid ->
+                    if (currentGrid.isNotEmpty()) {
+                        val columns = sqrt(currentGrid.size.toDouble()).toInt()
+                        val (gridSize, itemSize) = calculateGridAndItemSize(columns)
+
+
+                        Box(
+                            modifier = Modifier
+                                .size(gridSize)
+                                .background(
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                                .padding(12.dp)
+                                .graphicsLayer {
+                                    translationX = gridShakeAnimation.value
+                                }
+                        ) {
+                            // Grid content
+                            StaggeredGrid(columns = columns) {
+                                currentGrid.forEach { item ->
+                                    val scale = itemAnimations[item.id]?.value ?: 1f
+                                    GridItem(
+                                        item = item,
+                                        itemSize = itemSize,
+                                        scale = scale,
+                                        onTapped = {
+                                            if (gameState.isGameActive) {
+                                                viewModel.onGridItemTapped(item.id)
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                            )
                         }
                     }
                 }
             }
-            }
-        }
         }
     }
 
-    // Show result overlay
     GameResultOverlay(
         gameResult = gameState.gameResult,
         lives = gameState.lives,
