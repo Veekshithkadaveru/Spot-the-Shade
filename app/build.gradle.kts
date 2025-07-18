@@ -69,6 +69,11 @@ dependencies {
     kapt("com.google.dagger:hilt-compiler:2.51.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     
+    // TODO: REWARDED AD INTEGRATION - Add AdMob Dependencies
+    // Uncomment these lines when ready to integrate rewarded ads:
+    // implementation("com.google.android.gms:play-services-ads:23.0.0")
+    // implementation("androidx.lifecycle:lifecycle-process:2.7.0") // For app lifecycle tracking
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
