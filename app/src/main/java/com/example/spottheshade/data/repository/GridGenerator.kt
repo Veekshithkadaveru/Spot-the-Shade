@@ -53,6 +53,7 @@ class GridGenerator {
 
         val shape = SHAPE_LEVELS.firstOrNull { level <= it.first }?.second ?: ShapeType.TRIANGLE
 
+        // Use original random color generation for game variety
         val hue = Random.nextFloat() * 360
         val saturation = MIN_SATURATION + Random.nextFloat() * (MAX_SATURATION - MIN_SATURATION)
         val baseLight = MIN_LIGHTNESS + Random.nextFloat() * (MAX_LIGHTNESS - MIN_LIGHTNESS)
@@ -73,7 +74,8 @@ class GridGenerator {
             )
         }
     }
-
+    
+    // Remove the theme-specific color generation - not needed anymore
     private fun calculateColorDifference(level: Int): Float {
         COLOR_DIFFICULTY_LEVELS.forEachIndexed { index, (maxLevel, baseDiff) ->
             if (level <= maxLevel) {

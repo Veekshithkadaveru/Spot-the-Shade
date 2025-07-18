@@ -38,11 +38,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.navigation.Screen
+import com.example.spottheshade.ui.screens.components.ThemeSelector
 import com.example.spottheshade.ui.theme.DailyChallengeEnd
 import com.example.spottheshade.ui.theme.DailyChallengeStart
 import com.example.spottheshade.ui.theme.GradientGreen
 import com.example.spottheshade.ui.theme.GradientOrange
 import com.example.spottheshade.ui.theme.GradientYellow
+import com.example.spottheshade.ui.theme.LocalThemeColors
 import com.example.spottheshade.ui.theme.PlayButtonEnd
 import com.example.spottheshade.ui.theme.PlayButtonStart
 import com.example.spottheshade.ui.theme.White
@@ -54,33 +56,34 @@ fun MainMenuScreen(
     viewModel: GameViewModel = hiltViewModel()
 ) {
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
+    val themeColors = LocalThemeColors.current
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Main gradient background
+        // Natural wallpaper-like gradient background
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.85f)
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(
-                            GradientOrange,
-                            GradientYellow,
-                            GradientGreen
-                        )
+                        colors = themeColors.gradientColors
                     )
                 )
         )
 
-        // White bottom section
+        // Bottom section with surface gradient
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.15f)
                 .align(Alignment.BottomCenter)
-                .background(White)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = themeColors.surfaceGradient
+                    )
+                )
         )
 
         // Content
@@ -102,14 +105,14 @@ fun MainMenuScreen(
                     modifier = Modifier
                         .size(40.dp)
                         .background(
-                            color = White.copy(alpha = 0.3f),
+                            color = themeColors.overlayColor,
                             shape = CircleShape
                         )
                 ) {
                     Text(
                         text = if (userPreferences.soundEnabled) "🔊" else "🔇",
                         fontSize = 20.sp,
-                        color = White
+                        color = themeColors.iconColor
                     )
                 }
             }
@@ -126,36 +129,50 @@ fun MainMenuScreen(
                     fontSize = 52.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Cursive,
-                    color = Color.White,
+                    color = themeColors.titleColor,
                     style = TextStyle(
                         shadow = Shadow(
-                            color = Color.Black.copy(alpha = 0.7f),
-                            offset = Offset(8f, 8f),
-                            blurRadius = 4f
+                            color = Color.Black.copy(alpha = 0.8f),
+                            offset = Offset(4f, 4f),
+                            blurRadius = 8f
                         )
                     )
                 )
             }
 
-            // Play button
+            // Play button - use theme-specific button colors
             GradientButton(
                 text = "PLAY",
                 subText = "HIGH SCORE: ${if (userPreferences.highScore > 0) "${userPreferences.highScore}" else "0"}",
-                gradientColors = listOf(PlayButtonStart, PlayButtonEnd),
+                gradientColors = themeColors.buttonPrimary,
+                textColor = themeColors.textOnButton,
                 onClick = { navController.navigate(Screen.Gameplay.route) },
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
-            // Daily Challenge button
+            // Daily Challenge button - use theme-specific secondary colors
             GradientButton(
                 text = "DAILY\nCHALLENGE",
                 subText = null,
-                gradientColors = listOf(DailyChallengeStart, DailyChallengeEnd),
+                gradientColors = themeColors.buttonSecondary,
+                textColor = themeColors.textOnButton,
                 onClick = {
                     // TODO: Implement daily challenge navigation
                     navController.navigate(Screen.Gameplay.route)
                 },
-                modifier = Modifier.padding(bottom = 32.dp)
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+            
+            // Theme Selector
+            ThemeSelector(
+                userPreferences = userPreferences,
+                onThemeSelected = { theme ->
+                    viewModel.setCurrentTheme(theme)
+                },
+                onUnlockTheme = { theme ->
+                    viewModel.unlockThemeWithRewardedAd(theme)
+                },
+                modifier = Modifier.padding(bottom = 16.dp)
             )
         }
     }
@@ -166,6 +183,7 @@ fun GradientButton(
     text: String,
     subText: String?,
     gradientColors: List<Color>,
+    textColor: Color = White,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -199,14 +217,14 @@ fun GradientButton(
             ) {
                 Text(
                     text = text,
-                    color = White,
+                    color = textColor,
                     fontSize = if (subText != null) 20.sp else 18.sp,
                     fontWeight = FontWeight.Bold
                 )
                 if (subText != null) {
                     Text(
                         text = subText,
-                        color = White.copy(alpha = 0.9f),
+                        color = textColor.copy(alpha = 0.9f),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )

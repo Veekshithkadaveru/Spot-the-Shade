@@ -44,7 +44,11 @@ enum class ThemeType {
     DEFAULT,
     FOREST,
     OCEAN,
-    SUNSET
+    SUNSET,
+    WINTER,
+    SPRING,
+    NEON_CYBER,
+    VOLCANIC
 }
 
 enum class Difficulty(val label: String) {

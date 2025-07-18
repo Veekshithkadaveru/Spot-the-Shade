@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.shadow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.spottheshade.data.model.GameResult
@@ -52,6 +53,7 @@ import com.example.spottheshade.viewmodel.GameViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
+import com.example.spottheshade.ui.theme.LocalThemeColors
 
 @Composable
 fun GameplayScreen(
@@ -138,12 +140,9 @@ fun GameplayScreen(
         }
     }
 
-    // Gradient background colors similar to other screens
-    val gradientColors = listOf(
-        GradientOrange,
-        GradientYellow,
-        GradientGreen
-    )
+    // Natural wallpaper-like gradient background
+    val themeColors = LocalThemeColors.current
+    val gradientColors = themeColors.gradientColors
 
     Box(
         modifier = Modifier
@@ -169,6 +168,7 @@ fun GameplayScreen(
                 lives = gameState.lives,
                 highScore = userPreferences.highScore,
                 timeRemaining = gameState.timeRemaining,
+                themeColors = themeColors
             )
 
             // Center the grid in the remaining space
@@ -196,8 +196,12 @@ fun GameplayScreen(
                         Box(
                             modifier = Modifier
                                 .size(gridSize)
+                                .shadow(
+                                    elevation = 8.dp,
+                                    shape = RoundedCornerShape(20.dp)
+                                )
                                 .background(
-                                    color = Color.White.copy(alpha = 0.8f),
+                                    color = Color.White,
                                     shape = RoundedCornerShape(20.dp)
                                 )
                                 .padding(12.dp)

@@ -226,6 +226,13 @@ fun GameResultOverlay(
                         }
                         
                         GameResult.Timeout -> {
+                            // TODO: REWARDED AD INTEGRATION - Extra Time Button
+                            // This button should trigger rewarded ad flow:
+                            // 1. Show loading state while ad loads ("Loading Ad...")
+                            // 2. Disable button if ad fails to load
+                            // 3. Show different text based on ad availability
+                            // 4. Only grant extra time if user completes full ad
+                            // 5. Add analytics tracking for ad requests and completions
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(12.dp)

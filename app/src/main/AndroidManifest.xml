@@ -4,6 +4,11 @@
 
     <!-- Audio permissions for sound effects -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    
+    <!-- TODO: REWARDED AD INTEGRATION - Add internet permission for ads -->
+    <!-- Uncomment when ready to integrate ads: -->
+    <!-- <uses-permission android:name="android.permission.INTERNET" /> -->
+    <!-- <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> -->
 
     <application
         android:name=".SpotTheShadeApplication"
@@ -16,6 +21,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SpotTheShade"
         tools:targetApi="31">
+        
+        <!-- TODO: REWARDED AD INTEGRATION - Add AdMob App ID -->
+        <!-- Uncomment and replace with your AdMob App ID when ready: -->
+        <!-- <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"/> -->
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
