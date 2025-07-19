@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.spottheshade.ui.theme.ThemeColors
 
 @Composable
 fun TopInfoPanel(
@@ -39,7 +40,8 @@ fun TopInfoPanel(
     score: Int,
     lives: Int,
     highScore: Int,
-    timeRemaining: Int
+    timeRemaining: Int,
+    themeColors: ThemeColors
 ) {
     // Timer pulse animation when time is low
     val infiniteTransition = rememberInfiniteTransition(label = "timerPulse")
@@ -56,12 +58,12 @@ fun TopInfoPanel(
         1f
     }
 
-    // Simple clean background matching the game grid
+    // Theme-appropriate background with semi-transparency
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = Color.White.copy(alpha = 0.8f),
+                color = themeColors.surface.copy(alpha = 0.9f),
                 shape = RoundedCornerShape(20.dp)
             )
             .padding(16.dp)
@@ -81,7 +83,7 @@ fun TopInfoPanel(
                         text = "Level $level",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = themeColors.onSurface
                     )
                     val difficulty = when {
                         level <= 10 -> "Easy"
@@ -94,7 +96,7 @@ fun TopInfoPanel(
                     Text(
                         text = difficulty,
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray,
+                        color = themeColors.onSurface.copy(alpha = 0.7f),
                         fontSize = 12.sp
                     )
                 }
@@ -105,7 +107,7 @@ fun TopInfoPanel(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = Color(0xFFFFD700), // Gold color
+                            tint = Color(0xFFFFD700), // Keep gold star
                             modifier = Modifier.size(16.dp)
                         )
                         // Animated score
@@ -121,14 +123,14 @@ fun TopInfoPanel(
                                 text = " $targetScore",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Black
+                                color = themeColors.onSurface
                             )
                         }
                     }
                     Text(
                         text = "Best: $highScore",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray,
+                        color = themeColors.onSurface.copy(alpha = 0.7f),
                         fontSize = 12.sp
                     )
                 }
@@ -145,7 +147,7 @@ fun TopInfoPanel(
                     Text(
                         text = "Lives: ",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.Black,
+                        color = themeColors.onSurface,
                         fontWeight = FontWeight.Medium
                     )
                     // Animated hearts
@@ -175,7 +177,7 @@ fun TopInfoPanel(
                     color = when {
                         timeRemaining <= 5 -> Color.Red
                         timeRemaining <= 10 -> Color(0xFFFF8C00) // Orange
-                        else -> Color.Black
+                        else -> themeColors.onSurface
                     },
                     modifier = Modifier.graphicsLayer {
                         scaleX = pulseScale

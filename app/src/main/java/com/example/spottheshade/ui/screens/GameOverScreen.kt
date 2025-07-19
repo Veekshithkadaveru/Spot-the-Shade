@@ -41,9 +41,13 @@ import com.example.spottheshade.data.model.GameResult
 import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.navigation.Screen
 import com.example.spottheshade.ui.theme.GradientGreen
+import com.example.spottheshade.ui.theme.LocalThemeColors
 import com.example.spottheshade.ui.theme.PurpleBackground
 import com.example.spottheshade.ui.theme.White
 import com.example.spottheshade.viewmodel.GameViewModel
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.geometry.Offset
 
 @Composable
 fun GameOverScreen(
@@ -54,6 +58,7 @@ fun GameOverScreen(
 ) {
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val gameState by viewModel.gameState.collectAsState()
+    val themeColors = LocalThemeColors.current
     
     // Determine the game over message based on how the game ended
     val gameOverMessage = when (gameState.lastEndingReason) {
@@ -62,11 +67,8 @@ fun GameOverScreen(
         else -> "Game Over!"
     }
     
-    // Gradient background colors
-    val gradientColors = listOf(
-        Color(0xFF8B7CE8), // Light purple
-        Color(0xFF6B5B95)  // Darker purple
-    )
+    // Use theme colors for natural wallpaper background
+    val gradientColors = themeColors.gradientColors
     
     Box(
         modifier = Modifier
@@ -87,7 +89,14 @@ fun GameOverScreen(
                 text = gameOverMessage,
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = themeColors.titleColor,
+                style = TextStyle(
+                    shadow = Shadow(
+                        color = Color.Black.copy(alpha = 0.8f),
+                        offset = Offset(4f, 4f),
+                        blurRadius = 8f
+                    )
+                ),
                 modifier = Modifier.padding(bottom = 40.dp)
             )
             
@@ -221,6 +230,14 @@ fun GameOverScreen(
             
             Spacer(modifier = Modifier.height(40.dp))
             
+            // TODO: REWARDED AD INTEGRATION - Game Over Monetization Opportunities
+            // Consider adding these monetization features:
+            // 1. "REVIVE" button - Watch ad to continue with extra lives
+            // 2. "DOUBLE COINS" button - Watch ad to double any earned coins/points
+            // 3. "UNLOCK PREMIUM THEME" button - Special offer after high scores
+            // 4. Interstitial ad after every 3-5 games (non-intrusive timing)
+            // 5. Banner ad at bottom (optional, less intrusive)
+            
             // Retry Button
             Button(
                 onClick = { navController.navigate(Screen.Gameplay.route) },
@@ -230,13 +247,13 @@ fun GameOverScreen(
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = GradientGreen
+                    containerColor = themeColors.accent
                 )
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,
-                    tint = White,
+                    tint = themeColors.textOnButton,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -244,7 +261,7 @@ fun GameOverScreen(
                     text = "RETRY",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = White
+                    color = themeColors.textOnButton
                 )
             }
             
@@ -259,13 +276,13 @@ fun GameOverScreen(
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF6B73FF) // Blue color
+                    containerColor = themeColors.primary
                 )
             ) {
                 Icon(
                     imageVector = Icons.Default.Home,
                     contentDescription = null,
-                    tint = White,
+                    tint = themeColors.textOnButton,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -273,7 +290,7 @@ fun GameOverScreen(
                     text = "MAIN MENU",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = White
+                    color = themeColors.textOnButton
                 )
             }
         }

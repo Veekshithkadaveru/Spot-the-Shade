@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.spottheshade.data.model.GameResult
 import com.example.spottheshade.data.model.GameState
 import com.example.spottheshade.data.model.ShapeType
+import com.example.spottheshade.data.model.ThemeType
 import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.data.repository.GridGenerator
 import com.example.spottheshade.data.repository.PreferencesManager
@@ -22,6 +23,25 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
+
+// TODO: REWARDED AD INTEGRATION - OVERALL STRATEGY
+// MONETIZATION OPPORTUNITIES IN THIS GAME:
+// 1. THEME UNLOCKS: Show rewarded ads for premium themes (unlockThemeWithRewardedAd)
+// 2. EXTRA TIME: Show ads to get 5 extra seconds when time runs out (useExtraTime)
+// 3. CONTINUE GAME: Show ads to continue after game over with extra lives (future feature)
+// 4. DAILY REWARDS: Show ads for bonus coins/themes (future feature)
+// 5. REMOVE ADS: Offer premium purchase to remove all ads (future feature)
+//
+// AD IMPLEMENTATION CHECKLIST:
+// □ Add Google AdMob dependency to build.gradle
+// □ Configure AdMob App ID in AndroidManifest.xml
+// □ Create AdManager singleton class
+// □ Initialize ads in Application class
+// □ Add rewarded ad loading and showing logic
+// □ Implement proper ad callbacks and error handling
+// □ Add loading states for better UX
+// □ Test ad integration thoroughly
+// □ Add analytics for ad performance tracking
 
 sealed class GameUiEvent {
     data class CorrectTap(val itemId: Int) : GameUiEvent()
@@ -55,6 +75,7 @@ class GameViewModel @Inject constructor(
             // Increment games played counter
             preferencesManager.incrementGamesPlayed()
             
+            // Generate grid with original random colors (not theme-specific)
             val grid = gridGenerator.generateGrid(level = 1)
             val currentShape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
             _gameState.value = GameState(
@@ -79,6 +100,7 @@ class GameViewModel @Inject constructor(
             // Cancel any existing timer
             timerJob?.cancel()
             
+            // Generate grid with original random colors (not theme-specific)
             val grid = gridGenerator.generateGrid(level = currentState.level)
             val currentShape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
             _gameState.value = currentState.copy(
@@ -178,9 +200,20 @@ class GameViewModel @Inject constructor(
         startGame()
     }
     
+    // TODO: REWARDED AD INTEGRATION - Extra Time
+    // This function should show a rewarded ad before granting extra time
+    // IMPLEMENTATION NEEDED:
+    // 1. Show rewarded ad when user clicks "Get Extra Time" button
+    // 2. Only grant extra time if user successfully watches full ad
+    // 3. Add proper error handling for ad load failures
+    // 4. Track ad completion analytics
+    // 5. Limit extra time usage to once per game session (already implemented)
     fun useExtraTime() {
         val currentState = _gameState.value
         if (currentState.gameResult == GameResult.Timeout && !currentState.hasUsedExtraTime) {
+            // TODO: Replace direct grant with rewarded ad flow
+            // Current implementation grants extra time immediately for testing
+            
             // Restore the life that was lost due to timeout
             val restoredLives = currentState.lives + 1
 
@@ -233,6 +266,9 @@ class GameViewModel @Inject constructor(
             viewModelScope.launch {
                 preferencesManager.updateHighScore(currentState.score)
                 preferencesManager.updateHighestLevel(currentState.level)
+                
+                // Check if any themes should be unlocked based on achievements
+                checkThemeUnlockMilestones()
             
             soundManager.playGameOverSound()
             delay(300)
@@ -276,6 +312,73 @@ class GameViewModel @Inject constructor(
             val newSoundState = !currentPrefs.soundEnabled
             soundManager.setSoundEnabled(newSoundState)
             preferencesManager.setSoundEnabled(newSoundState)
+        }
+    }
+
+    // Theme management functions
+    fun unlockTheme(theme: ThemeType) {
+        viewModelScope.launch {
+            preferencesManager.unlockTheme(theme)
+        }
+    }
+    
+    fun setCurrentTheme(theme: ThemeType) {
+        viewModelScope.launch {
+            preferencesManager.setCurrentTheme(theme)
+        }
+    }
+    
+    fun isThemeUnlocked(theme: ThemeType, userPreferences: UserPreferences): Boolean {
+        return userPreferences.unlockedThemes.contains(theme)
+    }
+    
+    // TODO: REWARDED AD INTEGRATION - Theme Unlock
+    // This function should display a rewarded ad before unlocking themes
+    // IMPLEMENTATION NEEDED:
+    // 1. Initialize Google AdMob rewarded ads in MainActivity/Application
+    // 2. Load rewarded ad when user tries to unlock a theme
+    // 3. Show ad with proper callbacks:
+    //    - onAdShowedFullScreenContent: Track ad impression
+    //    - onAdDismissedFullScreenContent: Handle ad close
+    //    - onUserEarnedReward: Call unlockTheme(theme) only on successful completion
+    //    - onAdFailedToShowFullScreenContent: Show error message to user
+    // 4. Add loading states while ad is loading
+    // 5. Handle ad load failures gracefully (offer alternative unlock methods)
+    fun unlockThemeWithRewardedAd(theme: ThemeType) {
+        // TODO: Replace this direct unlock with actual rewarded ad flow
+        // Current implementation is temporary for testing
+        unlockTheme(theme)
+    }
+    
+    // Check if user has reached milestones to unlock themes organically
+    fun checkThemeUnlockMilestones() {
+        viewModelScope.launch {
+            val prefs = preferencesManager.userPreferences.first()
+            
+            // Auto-unlock themes based on achievements
+            when {
+                prefs.highestLevel >= 10 && !prefs.unlockedThemes.contains(ThemeType.FOREST) -> {
+                    preferencesManager.unlockTheme(ThemeType.FOREST)
+                }
+                prefs.highestLevel >= 20 && !prefs.unlockedThemes.contains(ThemeType.OCEAN) -> {
+                    preferencesManager.unlockTheme(ThemeType.OCEAN)
+                }
+                prefs.highestLevel >= 30 && !prefs.unlockedThemes.contains(ThemeType.SUNSET) -> {
+                    preferencesManager.unlockTheme(ThemeType.SUNSET)
+                }
+                prefs.highestLevel >= 40 && !prefs.unlockedThemes.contains(ThemeType.WINTER) -> {
+                    preferencesManager.unlockTheme(ThemeType.WINTER)
+                }
+                prefs.highestLevel >= 50 && !prefs.unlockedThemes.contains(ThemeType.SPRING) -> {
+                    preferencesManager.unlockTheme(ThemeType.SPRING)
+                }
+                prefs.highScore >= 1000 && !prefs.unlockedThemes.contains(ThemeType.NEON_CYBER) -> {
+                    preferencesManager.unlockTheme(ThemeType.NEON_CYBER)
+                }
+                prefs.highScore >= 2000 && !prefs.unlockedThemes.contains(ThemeType.VOLCANIC) -> {
+                    preferencesManager.unlockTheme(ThemeType.VOLCANIC)
+                }
+            }
         }
     }
 
