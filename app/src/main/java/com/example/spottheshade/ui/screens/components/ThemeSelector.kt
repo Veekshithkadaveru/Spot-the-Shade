@@ -118,8 +118,8 @@ fun ThemeCard(
     
     Card(
         modifier = modifier
-            .width(120.dp)
-            .height(160.dp)
+            .widthIn(min = 120.dp, max = 140.dp)
+            .heightIn(min = 160.dp, max = 180.dp)
             .scale(scale)
             .graphicsLayer {
                 rotationZ = rotation
@@ -235,10 +235,13 @@ fun ThemeCard(
                     Text(
                         text = getUnlockText(theme),
                         color = Color.White,
-                        fontSize = 10.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 8.dp)
+                        maxLines = 2,
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .fillMaxWidth()
                     )
                 }
             }
@@ -272,13 +275,13 @@ private fun getThemeDisplayName(theme: ThemeType): String {
 
 private fun getUnlockText(theme: ThemeType): String {
     return when (theme) {
-        ThemeType.DEFAULT -> "Already Unlocked"
-        ThemeType.FOREST -> "🌲 Reach Level 10"
-        ThemeType.OCEAN -> "🌊 Reach Level 20"
-        ThemeType.SUNSET -> "🌅 Reach Level 30"
-        ThemeType.WINTER -> "❄️ Reach Level 40"
-        ThemeType.SPRING -> "🌸 Reach Level 50"
-        ThemeType.NEON_CYBER -> "⚡ Score 1000 Points"
-        ThemeType.VOLCANIC -> "🌋 Score 2000 Points"
+        ThemeType.DEFAULT -> "Unlocked"
+        ThemeType.FOREST -> "🌲 Level 10"
+        ThemeType.OCEAN -> "🌊 Level 20"
+        ThemeType.SUNSET -> "🌅 Level 30"
+        ThemeType.WINTER -> "❄️ Level 40"
+        ThemeType.SPRING -> "🌸 Level 50"
+        ThemeType.NEON_CYBER -> "⚡ 1000 Pts"
+        ThemeType.VOLCANIC -> "🌋 2000 Pts"
     }
 } 

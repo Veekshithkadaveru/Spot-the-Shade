@@ -140,8 +140,9 @@ fun GameResultOverlay(
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFFFF4757),
-                                fontSize = 28.sp,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                modifier = Modifier.fillMaxWidth()
                             )
                             
                             Text(
@@ -168,8 +169,9 @@ fun GameResultOverlay(
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFFFFD700),
-                                fontSize = 28.sp,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                modifier = Modifier.fillMaxWidth()
                             )
                             
                             Text(
@@ -196,8 +198,9 @@ fun GameResultOverlay(
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFF4ECDC4),
-                                fontSize = 28.sp,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                modifier = Modifier.fillMaxWidth()
                             )
                             
                             Text(
@@ -238,7 +241,7 @@ fun GameResultOverlay(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 GameButton(
-                                    text = "📺 WATCH AD FOR EXTRA TIME",
+                                    text = "📺 WATCH AD (+5s)",
                                     onClick = onUseExtraTime,
                                     gradientColors = listOf(Color(0xFF00D4AA), Color(0xFF00C9FF)),
                                     icon = null
@@ -297,6 +300,7 @@ private fun GameButton(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
+            .padding(horizontal = 4.dp)
             .shadow(
                 elevation = if (isSecondary) 4.dp else 8.dp,
                 shape = RoundedCornerShape(16.dp)
@@ -322,7 +326,8 @@ private fun GameButton(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
             ) {
                 icon?.let {
                     Icon(
@@ -338,7 +343,9 @@ private fun GameButton(
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    fontSize = 16.sp
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth(0.95f)
                 )
             }
         }

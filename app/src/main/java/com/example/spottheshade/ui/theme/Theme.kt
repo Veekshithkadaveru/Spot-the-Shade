@@ -182,7 +182,7 @@ fun getThemeColors(themeType: ThemeType): ThemeColors {
             overlayColor = SpringNight.copy(alpha = 0.4f)
         )
         ThemeType.NEON_CYBER -> ThemeColors(
-            primary = CyberDark,
+            primary = CyberPurple,
             secondary = CyberPurple,
             accent = CyberElectric,
             background = CyberDark,
@@ -202,7 +202,7 @@ fun getThemeColors(themeType: ThemeType): ThemeColors {
             titleColor = Color.White,
             buttonPrimary = listOf(CyberElectric, CyberPink),
             buttonSecondary = listOf(CyberGreen, CyberYellow),
-            textOnButton = CyberDark,
+            textOnButton = Color.White,
             iconColor = Color.White,
             overlayColor = CyberDark.copy(alpha = 0.7f)
         )
