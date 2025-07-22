@@ -148,5 +148,42 @@ fun DrawScope.drawShape(shape: ShapeType, color: Color, size: Float) {
             }
             drawPath(path, color)
         }
+        ShapeType.HEXAGON -> {
+            val scale = 0.9f
+            val scaledSize = size * scale
+            val offset = (size - scaledSize) / 2f
+            val radius = scaledSize / 2f
+            val centerX = offset + radius
+            val centerY = offset + radius
+
+            val path = Path().apply {
+                // Start at top point and draw hexagon clockwise
+                moveTo(centerX, centerY - radius)
+                lineTo(centerX + radius * 0.866f, centerY - radius * 0.5f)
+                lineTo(centerX + radius * 0.866f, centerY + radius * 0.5f)
+                lineTo(centerX, centerY + radius)
+                lineTo(centerX - radius * 0.866f, centerY + radius * 0.5f)
+                lineTo(centerX - radius * 0.866f, centerY - radius * 0.5f)
+                close()
+            }
+            drawPath(path, color)
+        }
+        ShapeType.DIAMOND -> {
+            val scale = 0.85f
+            val scaledSize = size * scale
+            val offset = (size - scaledSize) / 2f
+            val centerX = offset + scaledSize / 2f
+            val centerY = offset + scaledSize / 2f
+            val halfSize = scaledSize / 2f
+
+            val path = Path().apply {
+                moveTo(centerX, centerY - halfSize)  // Top point
+                lineTo(centerX + halfSize, centerY)  // Right point
+                lineTo(centerX, centerY + halfSize)  // Bottom point
+                lineTo(centerX - halfSize, centerY)  // Left point
+                close()
+            }
+            drawPath(path, color)
+        }
     }
 } 

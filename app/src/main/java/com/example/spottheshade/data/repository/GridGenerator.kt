@@ -12,12 +12,35 @@ class GridGenerator {
     companion object {
         private const val MAX_GRID_SIZE = 8
         
+        private val TIMER_DURATIONS = listOf(
+            3 to 8,   // 2x2 grid: 8 seconds
+            7 to 10,  // 3x3 grid: 10 seconds  
+            26 to 12, // 4x4 grid: 12 seconds
+            45 to 15, // 5x5 grid: 15 seconds
+            70 to 15, // 6x6 grid: 15 seconds
+            95 to 18  // 7x7 grid: 18 seconds
+        )
+        private const val MAX_TIMER_DURATION = 20 // 8x8 grid
+        
         private val GRID_SIZE_LEVELS = listOf(
-            3 to 2, 7 to 3, 20 to 4, 40 to 5, 65 to 6, 90 to 7
+            3 to 2, 7 to 3, 26 to 4, 45 to 5, 70 to 6, 95 to 7
         )
         
-        private val SHAPE_LEVELS = listOf(
-            9 to ShapeType.CIRCLE, 19 to ShapeType.SQUARE
+        private val SHAPE_CYCLES = listOf(
+            // Cycle 1: Basic introduction
+            9 to ShapeType.CIRCLE,
+            21 to ShapeType.SQUARE,
+            35 to ShapeType.TRIANGLE,
+            
+            // Cycle 2: With harder grids/colors
+            50 to ShapeType.CIRCLE,
+            65 to ShapeType.SQUARE,
+            80 to ShapeType.TRIANGLE,
+            
+            // Cycle 3: Master level
+            95 to ShapeType.CIRCLE,
+            110 to ShapeType.SQUARE,
+            125 to ShapeType.TRIANGLE
         )
         
         private const val MIN_SATURATION = 0.6f
@@ -28,9 +51,11 @@ class GridGenerator {
         private val COLOR_DIFFICULTY_LEVELS = listOf(
             10 to 0.08f,
             25 to 0.05f,
+            30 to 0.035f,
+            35 to 0.030f,
             40 to 0.025f,
-            55 to 0.015f,
-            70 to 0.0075f
+            60 to 0.015f,
+            75 to 0.0075f
         )
         private const val LEGENDARY_DIFFICULTY_START_LEVEL = 70
         private const val LEGENDARY_DIFFICULTY_BASE = 0.0045f
@@ -42,16 +67,42 @@ class GridGenerator {
         level <= 10 -> Difficulty.EASY
         level <= 25 -> Difficulty.MEDIUM
         level <= 40 -> Difficulty.HARD
-        level <= 55 -> Difficulty.EXPERT
-        level <= 70 -> Difficulty.MASTER
+        level <= 60 -> Difficulty.EXPERT
+        level <= 75 -> Difficulty.MASTER
         else -> Difficulty.LEGENDARY
+    }
+    
+    fun getTimerDuration(level: Int): Int {
+        return TIMER_DURATIONS.firstOrNull { level <= it.first }?.second ?: MAX_TIMER_DURATION
+    }
+    
+    private fun getShapeForLevel(level: Int): ShapeType {
+        // Find the current shape based on level
+        val currentShape = SHAPE_CYCLES.firstOrNull { level <= it.first }?.second
+        
+        if (currentShape != null) {
+            return currentShape
+        }
+        
+        // For levels beyond our defined cycles (126+), cycle through all shapes including new ones
+        // This creates infinite variety for ultra-high levels
+        val cycleLength = 25 // 5 levels per shape * 5 shapes
+        val positionInCycle = (level - 126) % cycleLength
+        
+        return when (positionInCycle / 5) {
+            0 -> ShapeType.CIRCLE
+            1 -> ShapeType.SQUARE
+            2 -> ShapeType.TRIANGLE
+            3 -> ShapeType.HEXAGON
+            else -> ShapeType.DIAMOND
+        }
     }
 
     fun generateGrid(level: Int): List<GridItem> {
         val size = GRID_SIZE_LEVELS.firstOrNull { level <= it.first }?.second ?: MAX_GRID_SIZE
         val total = size * size
 
-        val shape = SHAPE_LEVELS.firstOrNull { level <= it.first }?.second ?: ShapeType.TRIANGLE
+        val shape = getShapeForLevel(level)
 
         // Use original random color generation for game variety
         val hue = Random.nextFloat() * 360

@@ -89,8 +89,8 @@ class GameViewModel @Inject constructor(
                 currentShape = currentShape
             )
             
-            // Start countdown timer
-            startTimer(10)
+            // Start countdown timer with dynamic duration
+            startTimer(gridGenerator.getTimerDuration(1))
         }
     }
     
@@ -111,12 +111,12 @@ class GameViewModel @Inject constructor(
                 currentShape = currentShape
             )
             
-            // Start countdown timer
-            startTimer(10)
+            // Start countdown timer with dynamic duration
+            startTimer(gridGenerator.getTimerDuration(currentState.level))
         }
     }
     
-    private fun startTimer(totalSeconds: Int = 10) {
+    private fun startTimer(totalSeconds: Int = gridGenerator.getTimerDuration(1)) {
         // Set the initial time immediately
         _gameState.value = _gameState.value.copy(timeRemaining = totalSeconds)
 
@@ -165,20 +165,20 @@ class GameViewModel @Inject constructor(
              val newLevel = currentState.level + 1
              val newScore = currentState.score + (10 * currentState.level)
 
-                 // Update persistent data
-                 preferencesManager.incrementCorrectAnswers()
-                 preferencesManager.updateHighScore(newScore)
-                 preferencesManager.updateHighestLevel(newLevel)
+            // Update persistent data
+            preferencesManager.incrementCorrectAnswers()
+            preferencesManager.updateHighScore(newScore)
+            preferencesManager.updateHighestLevel(newLevel)
 
-                // Update state for score and level, but don't pause
-             _gameState.value = currentState.copy(
-                 score = newScore,
-                    level = newLevel
-             )
+            // Update state for score and level, but don't pause
+            _gameState.value = currentState.copy(
+                score = newScore,
+                level = newLevel
+            )
              
-                // Wait for animation, then proceed
-                delay(400)
-                nextLevel()
+            // Wait for animation, then proceed
+            delay(400)
+            nextLevel()
 
          } else {
              // Wrong selection!
@@ -263,7 +263,7 @@ class GameViewModel @Inject constructor(
 
     fun endGame() {
         val currentState = _gameState.value
-            viewModelScope.launch {
+        viewModelScope.launch {
                 preferencesManager.updateHighScore(currentState.score)
                 preferencesManager.updateHighestLevel(currentState.level)
                 
@@ -297,7 +297,7 @@ class GameViewModel @Inject constructor(
                     hasUsedExtraTime = false
                 )
                 
-                startTimer(10)
+                startTimer(gridGenerator.getTimerDuration(_gameState.value.level))
             }
         }
     }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -126,17 +127,16 @@ fun MainMenuScreen(
             ) {
                 Text(
                     text = "Spot the Shade",
-                    fontSize = 52.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Cursive,
-                    color = themeColors.titleColor,
-                    style = TextStyle(
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Cursive,
                         shadow = Shadow(
                             color = Color.Black.copy(alpha = 0.8f),
                             offset = Offset(4f, 4f),
                             blurRadius = 8f
                         )
-                    )
+                    ),
+                    color = themeColors.titleColor
                 )
             }
 

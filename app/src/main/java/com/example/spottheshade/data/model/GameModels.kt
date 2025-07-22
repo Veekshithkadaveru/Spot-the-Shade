@@ -14,7 +14,7 @@ data class GameState(
     val score: Int = 0,
     val level: Int = 1,
     val lives: Int = 3,
-    val timeRemaining: Int = 10,
+    val timeRemaining: Int = 8,
     val isGameActive: Boolean = false,
     val gameResult: GameResult? = null,
     val hasUsedExtraTime: Boolean = false,
@@ -23,7 +23,7 @@ data class GameState(
 )
 
 enum class ShapeType {
-    CIRCLE, SQUARE, TRIANGLE
+    CIRCLE, SQUARE, TRIANGLE, HEXAGON, DIAMOND
 }
 
 enum class GameResult {
