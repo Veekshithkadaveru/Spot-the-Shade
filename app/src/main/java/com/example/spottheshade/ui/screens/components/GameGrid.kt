@@ -21,8 +21,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.spottheshade.data.model.ShapeType
@@ -72,6 +74,7 @@ fun GridItem(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val pressScale = remember { Animatable(1f) }
+    val haptic = LocalHapticFeedback.current
 
     Box(
         modifier = Modifier
@@ -86,6 +89,8 @@ fun GridItem(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null, // No ripple effect
                 onClick = {
+                    // Immediate haptic feedback on tap
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onTapped()
                     coroutineScope.launch {
                         pressScale.animateTo(0.8f, animationSpec = tween(100))

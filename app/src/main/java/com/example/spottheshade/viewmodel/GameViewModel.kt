@@ -10,6 +10,7 @@ import com.example.spottheshade.data.model.ShapeType
 import com.example.spottheshade.data.model.ThemeType
 import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.data.repository.GridGenerator
+import com.example.spottheshade.data.repository.HapticManager
 import com.example.spottheshade.data.repository.PreferencesManager
 import com.example.spottheshade.data.repository.SoundManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,12 +48,19 @@ sealed class GameUiEvent {
     data class CorrectTap(val itemId: Int) : GameUiEvent()
     data class IncorrectTap(val itemId: Int) : GameUiEvent()
     object ShakeGrid : GameUiEvent()
+    object Timeout : GameUiEvent()
+    object LevelUp : GameUiEvent()
+    object GameOver : GameUiEvent()
+    object TimeWarning : GameUiEvent()      // 5 seconds left
+    object TimeCritical : GameUiEvent()     // 3 seconds left  
+    object TimeUrgent : GameUiEvent()       // 1 second left
 }
 
 @HiltViewModel
 class GameViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager,
-    private val soundManager: SoundManager
+    private val soundManager: SoundManager,
+    private val hapticManager: HapticManager
 ) : ViewModel() {
     
     private val gridGenerator = GridGenerator()
@@ -128,9 +136,18 @@ class GameViewModel @Inject constructor(
                 val currentState = _gameState.value
                 if (!currentState.isGameActive) return@launch
 
-                // Play a warning sound when 5 seconds are left on the clock
-                if (timeLeft == 5) {
-                    soundManager.playTimeoutSound()
+                // Play warning sound and emit escalating haptic events
+                when (timeLeft) {
+                    5 -> {
+                        soundManager.playTimeoutSound()
+                        _uiEvents.emit(GameUiEvent.TimeWarning)
+                    }
+                    3 -> {
+                        _uiEvents.emit(GameUiEvent.TimeCritical)
+                    }
+                    1 -> {
+                        _uiEvents.emit(GameUiEvent.TimeUrgent)
+                    }
                 }
 
                 _gameState.value = currentState.copy(timeRemaining = timeLeft)
@@ -140,6 +157,7 @@ class GameViewModel @Inject constructor(
             val currentState = _gameState.value
             if (currentState.isGameActive) {
                 // Sound has already been played as a warning.
+                _uiEvents.emit(GameUiEvent.Timeout)
                 handleLifeLoss(GameResult.Timeout)
             }
         }
@@ -159,6 +177,7 @@ class GameViewModel @Inject constructor(
          if (tappedItem.isTarget) {
              // Correct selection! Progress to next level
                 _uiEvents.emit(GameUiEvent.CorrectTap(itemId))
+                _uiEvents.emit(GameUiEvent.LevelUp)
                 soundManager.playCorrectSound()
                 
                 val currentState = _gameState.value // get latest state
@@ -271,6 +290,7 @@ class GameViewModel @Inject constructor(
                 checkThemeUnlockMilestones()
             
             soundManager.playGameOverSound()
+            _uiEvents.emit(GameUiEvent.GameOver)
             delay(300)
             
             _gameState.value = currentState.copy(

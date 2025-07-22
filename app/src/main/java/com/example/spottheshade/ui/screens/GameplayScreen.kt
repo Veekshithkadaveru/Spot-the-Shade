@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.shadow
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -63,6 +65,7 @@ fun GameplayScreen(
     val gameState by viewModel.gameState.collectAsState()
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val coroutineScope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
     val gridShakeAnimation = remember { Animatable(0f) }
     val itemAnimations = remember { mutableMapOf<Int, Animatable<Float, AnimationVector1D>>() }
@@ -93,8 +96,15 @@ fun GameplayScreen(
                         }
                     }
                 }
+                
+                is GameUiEvent.LevelUp -> {
+                    // Celebratory haptic feedback for level progression
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
 
                 is GameUiEvent.IncorrectTap -> {
+                    // Strong haptic feedback for wrong answers
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     itemAnimations[event.itemId]?.let { animatable ->
                         coroutineScope.launch {
                             animatable.animateTo(0.8f, tween(100))
@@ -104,6 +114,8 @@ fun GameplayScreen(
                 }
 
                 is GameUiEvent.ShakeGrid -> {
+                    // Additional haptic feedback during grid shake
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     coroutineScope.launch {
                         gridShakeAnimation.animateTo(15f, tween(50))
                         gridShakeAnimation.animateTo(-15f, tween(50))
@@ -111,6 +123,45 @@ fun GameplayScreen(
                         gridShakeAnimation.animateTo(-10f, tween(50))
                         gridShakeAnimation.animateTo(5f, tween(50))
                         gridShakeAnimation.animateTo(0f, spring())
+                    }
+                }
+                
+                is GameUiEvent.Timeout -> {
+                    // Double haptic pulse for timeout
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    coroutineScope.launch {
+                        kotlinx.coroutines.delay(100)
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                }
+                
+                is GameUiEvent.GameOver -> {
+                    // Strong final haptic feedback for game over
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
+                
+                is GameUiEvent.TimeWarning -> {
+                    // Light warning pulse at 5 seconds
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+                
+                is GameUiEvent.TimeCritical -> {
+                    // Medium urgency double pulse at 3 seconds
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    coroutineScope.launch {
+                        kotlinx.coroutines.delay(150)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+                
+                is GameUiEvent.TimeUrgent -> {
+                    // Urgent rapid triple pulse at 1 second
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    coroutineScope.launch {
+                        kotlinx.coroutines.delay(100)
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        kotlinx.coroutines.delay(100)
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
                 }
             }
