@@ -54,6 +54,7 @@ sealed class GameUiEvent {
     object TimeWarning : GameUiEvent()      // 5 seconds left
     object TimeCritical : GameUiEvent()     // 3 seconds left  
     object TimeUrgent : GameUiEvent()       // 1 second left
+    data class RevealAnswer(val targetId: Int) : GameUiEvent()  // Show correct answer after wrong/timeout
 }
 
 @HiltViewModel
@@ -71,19 +72,16 @@ class GameViewModel @Inject constructor(
 
     private val _uiEvents = MutableSharedFlow<GameUiEvent>()
     val uiEvents = _uiEvents.asSharedFlow()
-    
-    // Expose user preferences as StateFlow
+
     val userPreferences = preferencesManager.userPreferences
     
     fun startGame() {
         viewModelScope.launch {
-            // Cancel any existing timer
+
             timerJob?.cancel()
-            
-            // Increment games played counter
+
             preferencesManager.incrementGamesPlayed()
-            
-            // Generate grid with original random colors (not theme-specific)
+
             val grid = gridGenerator.generateGrid(level = 1)
             val currentShape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
             _gameState.value = GameState(
@@ -125,18 +123,17 @@ class GameViewModel @Inject constructor(
     }
     
     private fun startTimer(totalSeconds: Int = gridGenerator.getTimerDuration(1)) {
-        // Set the initial time immediately
+
         _gameState.value = _gameState.value.copy(timeRemaining = totalSeconds)
 
         timerJob = viewModelScope.launch {
-            // Loop from the second before down to 0
+
             for (timeLeft in (totalSeconds - 1) downTo 0) {
                 delay(1000)
                 
                 val currentState = _gameState.value
                 if (!currentState.isGameActive) return@launch
 
-                // Play warning sound and emit escalating haptic events
                 when (timeLeft) {
                     5 -> {
                         soundManager.playTimeoutSound()
@@ -153,10 +150,9 @@ class GameViewModel @Inject constructor(
                 _gameState.value = currentState.copy(timeRemaining = timeLeft)
             }
 
-            // Time's up!
             val currentState = _gameState.value
             if (currentState.isGameActive) {
-                // Sound has already been played as a warning.
+
                 _uiEvents.emit(GameUiEvent.Timeout)
                 handleLifeLoss(GameResult.Timeout)
             }
@@ -167,7 +163,7 @@ class GameViewModel @Inject constructor(
         val currentState = _gameState.value
         if (!currentState.isGameActive) return
         
-        // Stop the timer since user made a selection
+
         timerJob?.cancel()
 
          val tappedItem = currentState.grid.find { it.id == itemId }
@@ -175,12 +171,12 @@ class GameViewModel @Inject constructor(
 
         viewModelScope.launch {
          if (tappedItem.isTarget) {
-             // Correct selection! Progress to next level
+
                 _uiEvents.emit(GameUiEvent.CorrectTap(itemId))
                 _uiEvents.emit(GameUiEvent.LevelUp)
                 soundManager.playCorrectSound()
                 
-                val currentState = _gameState.value // get latest state
+                val currentState = _gameState.value
              val newLevel = currentState.level + 1
              val newScore = currentState.score + (10 * currentState.level)
 
@@ -189,13 +185,11 @@ class GameViewModel @Inject constructor(
             preferencesManager.updateHighScore(newScore)
             preferencesManager.updateHighestLevel(newLevel)
 
-            // Update state for score and level, but don't pause
             _gameState.value = currentState.copy(
                 score = newScore,
                 level = newLevel
             )
-             
-            // Wait for animation, then proceed
+
             delay(400)
             nextLevel()
 
@@ -231,9 +225,7 @@ class GameViewModel @Inject constructor(
         val currentState = _gameState.value
         if (currentState.gameResult == GameResult.Timeout && !currentState.hasUsedExtraTime) {
             // TODO: Replace direct grant with rewarded ad flow
-            // Current implementation grants extra time immediately for testing
-            
-            // Restore the life that was lost due to timeout
+
             val restoredLives = currentState.lives + 1
 
             _gameState.value = currentState.copy(
@@ -250,15 +242,15 @@ class GameViewModel @Inject constructor(
     private suspend fun handleLifeLoss(resultType: GameResult) {
         val currentState = _gameState.value
         val newLives = currentState.lives - 1
+        
+        // Stop timer during life loss handling
+        timerJob?.cancel()
 
         if (newLives < 0) {
-            // This should not happen, but as a safeguard:
             endGame()
             return
         }
 
-        // If the last life was lost on a wrong answer, end the game immediately.
-        // For timeouts, we show the 'extra time' dialog first.
         if (newLives == 0 && resultType == GameResult.Wrong) {
             endGame()
         } else {
@@ -283,31 +275,53 @@ class GameViewModel @Inject constructor(
     fun endGame() {
         val currentState = _gameState.value
         viewModelScope.launch {
-                preferencesManager.updateHighScore(currentState.score)
-                preferencesManager.updateHighestLevel(currentState.level)
-                
-                // Check if any themes should be unlocked based on achievements
-                checkThemeUnlockMilestones()
+            // Stop the timer immediately for answer reveal
+            timerJob?.cancel()
             
-            soundManager.playGameOverSound()
-            _uiEvents.emit(GameUiEvent.GameOver)
-            delay(300)
+            preferencesManager.updateHighScore(currentState.score)
+            preferencesManager.updateHighestLevel(currentState.level)
+            
+            // Check if any themes should be unlocked based on achievements
+            checkThemeUnlockMilestones()
+            
+            // Show professional answer reveal sequence
+            val targetId = currentState.grid.find { it.isTarget }?.id
+            targetId?.let {
+                // First show the reveal with dramatic effect
+                _uiEvents.emit(GameUiEvent.RevealAnswer(it))
+                delay(500) // Wait for reveal animation to build up
+                
+                // Play game over sound after reveal starts
+                soundManager.playGameOverSound()
+                
+                // Hold the reveal for learning - timer is stopped
+                delay(2500) // Professional timing - 3 seconds total
+                
+                // Emit game over after reveal completes
+                _uiEvents.emit(GameUiEvent.GameOver)
+                delay(200) // Brief pause before transition
+            } ?: run {
+                // Fallback if no target found
+                soundManager.playGameOverSound()
+                _uiEvents.emit(GameUiEvent.GameOver)
+                delay(300)
+            }
             
             _gameState.value = currentState.copy(
                 gameResult = GameResult.GameOver,
                 isGameActive = false,
                 lives = 0,
                 timeRemaining = 0,
-                lastEndingReason = currentState.gameResult
+                lastEndingReason = currentState.gameResult,
+                revealTargetId = targetId
             )
         }
     }
-    
-    // Add function to continue after losing a life
+
     fun continueAfterLifeLoss() {
         val currentState = _gameState.value
         if (currentState.lives > 0 && currentState.gameResult != GameResult.GameOver) {
-            // Keep the same grid, just reset game state and timer
+
             viewModelScope.launch {
                 timerJob?.cancel()
                 
@@ -401,6 +415,8 @@ class GameViewModel @Inject constructor(
             }
         }
     }
+
+    fun getHapticManager(): HapticManager = hapticManager
 
     override fun onCleared() {
         super.onCleared()

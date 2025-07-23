@@ -19,7 +19,8 @@ data class GameState(
     val gameResult: GameResult? = null,
     val hasUsedExtraTime: Boolean = false,
     val currentShape: ShapeType = ShapeType.CIRCLE,
-    val lastEndingReason: GameResult? = null
+    val lastEndingReason: GameResult? = null,
+    val revealTargetId: Int? = null
 )
 
 enum class ShapeType {

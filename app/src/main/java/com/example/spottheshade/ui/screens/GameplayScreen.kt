@@ -26,17 +26,18 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.draw.shadow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.spottheshade.data.model.GameResult
@@ -47,15 +48,13 @@ import com.example.spottheshade.ui.screens.components.GridItem
 import com.example.spottheshade.ui.screens.components.StaggeredGrid
 import com.example.spottheshade.ui.screens.components.TopInfoPanel
 import com.example.spottheshade.ui.screens.components.calculateGridAndItemSize
-import com.example.spottheshade.ui.theme.GradientGreen
-import com.example.spottheshade.ui.theme.GradientOrange
-import com.example.spottheshade.ui.theme.GradientYellow
+import com.example.spottheshade.ui.theme.LocalThemeColors
 import com.example.spottheshade.viewmodel.GameUiEvent
 import com.example.spottheshade.viewmodel.GameViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
-import com.example.spottheshade.ui.theme.LocalThemeColors
 
 @Composable
 fun GameplayScreen(
@@ -66,13 +65,17 @@ fun GameplayScreen(
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val coroutineScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
+    val hapticManager = viewModel.getHapticManager()
 
     val gridShakeAnimation = remember { Animatable(0f) }
     val itemAnimations = remember { mutableMapOf<Int, Animatable<Float, AnimationVector1D>>() }
+    var revealedTargetId by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(gameState.grid) {
         val currentIds = gameState.grid.map { it.id }.toSet()
         itemAnimations.keys.retainAll { id -> id in currentIds }
+
+        revealedTargetId = null
     }
 
     gameState.grid.forEach { item ->
@@ -96,15 +99,15 @@ fun GameplayScreen(
                         }
                     }
                 }
-                
+
                 is GameUiEvent.LevelUp -> {
                     // Celebratory haptic feedback for level progression
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    hapticManager.levelUp(haptic)
                 }
 
                 is GameUiEvent.IncorrectTap -> {
                     // Strong haptic feedback for wrong answers
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    hapticManager.wrongTap(haptic)
                     itemAnimations[event.itemId]?.let { animatable ->
                         coroutineScope.launch {
                             animatable.animateTo(0.8f, tween(100))
@@ -115,7 +118,7 @@ fun GameplayScreen(
 
                 is GameUiEvent.ShakeGrid -> {
                     // Additional haptic feedback during grid shake
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    hapticManager.gridShake(haptic)
                     coroutineScope.launch {
                         gridShakeAnimation.animateTo(15f, tween(50))
                         gridShakeAnimation.animateTo(-15f, tween(50))
@@ -124,53 +127,63 @@ fun GameplayScreen(
                         gridShakeAnimation.animateTo(5f, tween(50))
                         gridShakeAnimation.animateTo(0f, spring())
                     }
+
                 }
-                
+
                 is GameUiEvent.Timeout -> {
                     // Double haptic pulse for timeout
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    coroutineScope.launch {
-                        kotlinx.coroutines.delay(100)
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    }
+                    hapticManager.timeout(haptic, coroutineScope)
                 }
-                
+
                 is GameUiEvent.GameOver -> {
                     // Strong final haptic feedback for game over
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    hapticManager.gameOver(haptic)
                 }
-                
+
                 is GameUiEvent.TimeWarning -> {
                     // Light warning pulse at 5 seconds
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    hapticManager.timeWarning(haptic)
                 }
-                
+
                 is GameUiEvent.TimeCritical -> {
-                    // Medium urgency double pulse at 3 seconds
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    coroutineScope.launch {
-                        kotlinx.coroutines.delay(150)
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    }
+
+                    hapticManager.timeCritical(haptic, coroutineScope)
                 }
-                
+
                 is GameUiEvent.TimeUrgent -> {
-                    // Urgent rapid triple pulse at 1 second
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+
+                    hapticManager.timeUrgent(haptic, coroutineScope)
+                }
+
+                is GameUiEvent.RevealAnswer -> {
+
+                    revealedTargetId = event.targetId
+
+                    hapticManager.answerReveal(haptic, coroutineScope)
+
                     coroutineScope.launch {
-                        kotlinx.coroutines.delay(100)
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        kotlinx.coroutines.delay(100)
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        delay(200)
+                        // Animate other items to fade slightly for focus
+                        gameState.grid.forEach { item ->
+                            if (item.id != event.targetId) {
+                                itemAnimations[item.id]?.let { anim ->
+                                    launch {
+                                        anim.animateTo(0.7f, tween(300))
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // Navigate to Game Over screen when game ends
+    // Professional game over transition with refined timing
     LaunchedEffect(gameState.gameResult) {
         if (gameState.gameResult == GameResult.GameOver) {
+
+            delay(500)
             navController.navigate(Screen.GameOver.createRoute(gameState.score, gameState.level)) {
                 popUpTo(Screen.MainMenu.route) { inclusive = false }
             }
@@ -268,6 +281,8 @@ fun GameplayScreen(
                                         item = item,
                                         itemSize = itemSize,
                                         scale = scale,
+                                        isRevealing = revealedTargetId == item.id,
+                                        hapticManager = hapticManager,
                                         onTapped = {
                                             if (gameState.isGameActive) {
                                                 viewModel.onGridItemTapped(item.id)

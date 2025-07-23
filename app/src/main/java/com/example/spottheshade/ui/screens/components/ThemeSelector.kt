@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.example.spottheshade.data.model.ThemeType
 import com.example.spottheshade.data.model.UserPreferences
+import com.example.spottheshade.data.repository.HapticManager
 import com.example.spottheshade.ui.theme.*
 
 @Composable
@@ -43,7 +44,8 @@ fun ThemeSelector(
     userPreferences: UserPreferences,
     onThemeSelected: (ThemeType) -> Unit,
     onUnlockTheme: (ThemeType) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    hapticManager: HapticManager? = null
 ) {
     val themeColors = LocalThemeColors.current
     
@@ -70,13 +72,14 @@ fun ThemeSelector(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            items(ThemeType.values()) { theme ->
+            items(ThemeType.entries.toTypedArray()) { theme ->
                 ThemeCard(
                     theme = theme,
                     isUnlocked = userPreferences.unlockedThemes.contains(theme),
                     isSelected = userPreferences.currentTheme == theme,
                     onThemeSelected = onThemeSelected,
-                    onUnlockTheme = onUnlockTheme
+                    onUnlockTheme = onUnlockTheme,
+                    hapticManager = hapticManager
                 )
             }
         }
@@ -90,13 +93,13 @@ fun ThemeCard(
     isSelected: Boolean,
     onThemeSelected: (ThemeType) -> Unit,
     onUnlockTheme: (ThemeType) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    hapticManager: HapticManager? = null
 ) {
     val themeColors = getThemeColors(theme)
     val borderColor = if (isSelected) Color.White else Color.Transparent
     val haptic = LocalHapticFeedback.current
-    
-    // Add scale animation for better interaction feedback
+
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.05f else 1f,
         animationSpec = spring(
@@ -126,7 +129,12 @@ fun ThemeCard(
             }
             .border(3.dp, borderColor, RoundedCornerShape(16.dp))
             .clickable {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+
+                if (hapticManager != null) {
+                    hapticManager.themeSelect(haptic)
+                } else {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
                 if (isUnlocked) {
                     onThemeSelected(theme)
                 } else {
