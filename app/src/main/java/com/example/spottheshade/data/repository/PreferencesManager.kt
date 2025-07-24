@@ -32,11 +32,23 @@ class PreferencesManager(private val context: Context) {
             UserPreferences(
                 highScore = preferences[HIGH_SCORE_KEY] ?: 0,
                 highestLevel = preferences[HIGHEST_LEVEL_KEY] ?: 1,
-                unlockedThemes = preferences[UNLOCKED_THEMES_KEY]?.map { 
-                    ThemeType.valueOf(it) 
+                unlockedThemes = preferences[UNLOCKED_THEMES_KEY]?.mapNotNull { 
+                    try {
+                        ThemeType.valueOf(it)
+                    } catch (e: IllegalArgumentException) {
+                        // Invalid theme name in storage, skip it
+                        android.util.Log.w("PreferencesManager", "Invalid theme name found: $it", e)
+                        null
+                    }
                 }?.toSet() ?: setOf(ThemeType.DEFAULT),
                 currentTheme = preferences[CURRENT_THEME_KEY]?.let { 
-                    ThemeType.valueOf(it) 
+                    try {
+                        ThemeType.valueOf(it)
+                    } catch (e: IllegalArgumentException) {
+                        // Invalid theme name in storage, fall back to default
+                        android.util.Log.w("PreferencesManager", "Invalid current theme found: $it", e)
+                        null
+                    }
                 } ?: ThemeType.DEFAULT,
                 soundEnabled = preferences[SOUND_ENABLED_KEY] ?: true,
                 totalGamesPlayed = preferences[TOTAL_GAMES_PLAYED_KEY] ?: 0,
