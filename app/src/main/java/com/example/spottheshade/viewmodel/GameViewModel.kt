@@ -53,7 +53,7 @@ sealed class GameUiEvent {
     object TimeCritical : GameUiEvent()     // 3 seconds left  
     object TimeUrgent : GameUiEvent()       // 1 second left
     data class RevealAnswer(val targetId: Int) :
-        GameUiEvent()  // Show correct answer after wrong/timeout
+        GameUiEvent()
 }
 
 @HiltViewModel
@@ -73,6 +73,14 @@ class GameViewModel @Inject constructor(
     val uiEvents = _uiEvents.asSharedFlow()
 
     val userPreferences = preferencesManager.userPreferences
+
+    init {
+        // Initialize sound state with user preferences
+        viewModelScope.launch {
+            val prefs = preferencesManager.userPreferences.first()
+            soundManager.setSoundEnabled(prefs.soundEnabled)
+        }
+    }
 
     fun startGame() {
         viewModelScope.launch {
@@ -102,10 +110,8 @@ class GameViewModel @Inject constructor(
     fun nextLevel() {
         val currentState = _gameState.value
         viewModelScope.launch {
-            // Cancel any existing timer
             timerJob?.cancel()
 
-            // Generate grid with original random colors (not theme-specific)
             val grid = gridGenerator.generateGrid(level = currentState.level)
             val currentShape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
             _gameState.value = currentState.copy(
@@ -187,7 +193,6 @@ class GameViewModel @Inject constructor(
                 val newLevel = currentState.level + 1
                 val newScore = currentState.score + (10 * currentState.level)
 
-                // Update persistent data
                 preferencesManager.incrementCorrectAnswers()
                 preferencesManager.updateHighScore(newScore)
                 preferencesManager.updateHighestLevel(newLevel)
@@ -195,7 +200,7 @@ class GameViewModel @Inject constructor(
                 _gameState.value = currentState.copy(
                     score = newScore,
                     level = newLevel,
-                    isGameActive = false  // Keep inactive during transition
+                    isGameActive = false
                 )
 
                 delay(400)
@@ -206,7 +211,7 @@ class GameViewModel @Inject constructor(
                 _uiEvents.emit(GameUiEvent.IncorrectTap(itemId))
                 _uiEvents.emit(GameUiEvent.ShakeGrid)
                 soundManager.playWrongSound()
-                delay(500) // Allow animation to play
+                delay(500)
                 handleLifeLoss(GameResult.Wrong)
             }
         }
@@ -295,19 +300,19 @@ class GameViewModel @Inject constructor(
             // Show professional answer reveal sequence
             val targetId = currentState.grid.find { it.isTarget }?.id
             targetId?.let {
-                // First show the reveal with dramatic effect
+
                 _uiEvents.emit(GameUiEvent.RevealAnswer(it))
-                delay(500) // Wait for reveal animation to build up
+                delay(500)
 
                 // Play game over sound after reveal starts
                 soundManager.playGameOverSound()
 
                 // Hold the reveal for learning - timer is stopped
-                delay(2500) // Professional timing - 3 seconds total
+                delay(2500)
 
                 // Emit game over after reveal completes
                 _uiEvents.emit(GameUiEvent.GameOver)
-                delay(200) // Brief pause before transition
+                delay(200)
             } ?: run {
                 // Fallback if no target found
                 soundManager.playGameOverSound()
@@ -352,8 +357,9 @@ class GameViewModel @Inject constructor(
         viewModelScope.launch {
             val currentPrefs = preferencesManager.userPreferences.first()
             val newSoundState = !currentPrefs.soundEnabled
-            soundManager.setSoundEnabled(newSoundState)
+
             preferencesManager.setSoundEnabled(newSoundState)
+            soundManager.setSoundEnabled(newSoundState)
         }
     }
 
@@ -434,7 +440,6 @@ class GameViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        soundManager.release()
     }
 }
 
