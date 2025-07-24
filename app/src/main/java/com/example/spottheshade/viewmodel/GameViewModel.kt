@@ -185,6 +185,8 @@ class GameViewModel @Inject constructor(
         viewModelScope.launch {
             if (tappedItem.isTarget) {
 
+                soundManager.stopTimeoutSound()
+
                 _uiEvents.emit(GameUiEvent.CorrectTap(itemId))
                 _uiEvents.emit(GameUiEvent.LevelUp)
                 soundManager.playCorrectSound()

@@ -21,6 +21,7 @@ class SoundManager @Inject constructor(
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val soundPool: SoundPool
     private val soundMap = mutableMapOf<SoundType, Int>()
+    private var currentTimeoutStreamId: Int? = null
 
     init {
         val audioAttributes = AudioAttributes.Builder()
@@ -42,9 +43,15 @@ class SoundManager @Inject constructor(
             soundMap[SoundType.WRONG] = soundPool.load(context, R.raw.wrong_sound, 1)
             soundMap[SoundType.TIMEOUT] = soundPool.load(context, R.raw.timeout_sound, 1)
             soundMap[SoundType.GAME_OVER] = soundPool.load(context, R.raw.game_over_sound, 1)
+        } catch (e: android.content.res.Resources.NotFoundException) {
+            // Sound file not found in resources
+            android.util.Log.e("SoundManager", "Sound file not found in resources", e)
+        } catch (e: OutOfMemoryError) {
+            // Not enough memory to load sounds
+            android.util.Log.e("SoundManager", "Out of memory while loading sounds", e)
         } catch (e: Exception) {
-            // Log this error, e.g., using Log.e("SoundManager", "Error loading sounds", e)
-            e.printStackTrace()
+            // Fallback for any other unexpected exceptions
+            android.util.Log.e("SoundManager", "Unexpected error loading sounds", e)
         }
     }
 
@@ -56,7 +63,10 @@ class SoundManager @Inject constructor(
 
         scope.launch(Dispatchers.IO) {
             soundMap[soundType]?.let { soundId ->
-                soundPool.play(soundId, volume, volume, 1, 0, rate)
+                val streamId = soundPool.play(soundId, volume, volume, 1, 0, rate)
+                if (soundType == SoundType.TIMEOUT) {
+                    currentTimeoutStreamId = streamId
+                }
             }
         }
     }
@@ -82,6 +92,13 @@ class SoundManager @Inject constructor(
     }
     
     fun isSoundEnabled(): Boolean = soundEnabled
+    
+    fun stopTimeoutSound() {
+        currentTimeoutStreamId?.let { streamId ->
+            soundPool.stop(streamId)
+            currentTimeoutStreamId = null
+        }
+    }
     
     fun release() {
         soundPool.release()
