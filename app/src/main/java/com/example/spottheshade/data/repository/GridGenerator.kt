@@ -84,17 +84,14 @@ class GridGenerator {
             return currentShape
         }
         
-        // For levels beyond our defined cycles (126+), cycle through all shapes including new ones
-        // This creates infinite variety for ultra-high levels
-        val cycleLength = 25 // 5 levels per shape * 5 shapes
+
+        val cycleLength = 25
         val positionInCycle = (level - 126) % cycleLength
         
         return when (positionInCycle / 5) {
             0 -> ShapeType.CIRCLE
             1 -> ShapeType.SQUARE
-            2 -> ShapeType.TRIANGLE
-            3 -> ShapeType.HEXAGON
-            else -> ShapeType.DIAMOND
+            else -> ShapeType.TRIANGLE
         }
     }
 
