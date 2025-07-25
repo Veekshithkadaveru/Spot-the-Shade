@@ -272,82 +272,172 @@ fun calculateGridAndItemSize(columns: Int): Pair<Dp, Dp> {
     val itemPadding = 4.dp * 2
     val maxItemSize = (availableWidth / columns) - itemPadding
 
-    val baseSize = when {
-        columns <= 3 -> 100.dp
-        columns <= 4 -> 90.dp
-        columns <= 5 -> 80.dp
-        columns <= 6 -> 70.dp
-        columns <= 7 -> 60.dp
-        else -> 50.dp
+    // Use more screen space with improved base sizes and better space utilization
+    val itemSize = when {
+        columns <= 3 -> {
+            // For very small grids, use almost all available space but cap at reasonable size
+            minOf(maxItemSize, 140.dp)
+        }
+        columns <= 4 -> {
+            // For 4x4 grids, use generous sizing
+            minOf(maxItemSize, 110.dp)
+        }
+        columns <= 5 -> {
+            // For 5x5 grids, use generous sizing for better visibility
+            minOf(maxItemSize, 115.dp)
+        }
+        columns <= 6 -> {
+            // Slightly smaller for 6x6
+            minOf(maxItemSize, 75.dp)
+        }
+        columns <= 7 -> {
+            // Reasonable size for 7x7
+            minOf(maxItemSize, 65.dp)
+        }
+        else -> {
+            // For very large grids, keep compact
+            minOf(maxItemSize, 50.dp)
+        }
     }
 
-    val itemSize = minOf(baseSize, maxItemSize)
     val gridSize = (itemSize + itemPadding) * columns
 
     return Pair(gridSize, itemSize)
 }
 
 fun DrawScope.drawShape(shape: ShapeType, color: Color, size: Float) {
+    // Subtle gradient that preserves color accuracy for gameplay
+    fun gameplayGradient(base: Color): Brush = Brush.radialGradient(
+        colors = listOf(
+            base.copy(alpha = 1.0f),
+            base.copy(alpha = 0.95f),
+            base.copy(alpha = 0.9f)
+        ),
+        center = Offset(center.x - size * 0.08f, center.y - size * 0.1f),
+        radius = size * 0.6f
+    )
+    
+    // Minimal shadow for depth without color interference
+    fun subtleShadow(base: Color) = Color.Black.copy(alpha = 0.15f)
+    
+    // Very light highlight that doesn't affect color perception
+    fun lightHighlight(): Color = Color.White.copy(alpha = 0.12f)
     when (shape) {
         ShapeType.CIRCLE -> {
-            drawCircle(color, radius = size / 2f)
+            // Minimal shadow for subtle depth
+            drawCircle(
+                color = subtleShadow(color),
+                radius = size * 0.48f,
+                center = Offset(center.x + size * 0.02f, center.y + size * 0.05f)
+            )
+            
+            // Main shape with color-preserving gradient
+            drawCircle(brush = gameplayGradient(color), radius = size * 0.47f)
+            
+            // Very subtle highlight that doesn't interfere with color
+            drawCircle(
+                color = lightHighlight(),
+                radius = size * 0.15f,
+                center = Offset(center.x - size * 0.1f, center.y - size * 0.1f)
+            )
+            
+            // Clean, minimal border
+            drawCircle(
+                color = Color.White.copy(alpha = 0.2f),
+                radius = size * 0.47f,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = size * 0.02f)
+            )
         }
-
         ShapeType.SQUARE -> {
-            drawRect(color, size = androidx.compose.ui.geometry.Size(size, size))
+            val corner = size * 0.12f
+            val squareSize = size * 0.94f
+            val offset = (size - squareSize) / 2f
+            
+            // Simple shadow for depth
+            drawRoundRect(
+                color = subtleShadow(color),
+                size = androidx.compose.ui.geometry.Size(squareSize, squareSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+                topLeft = Offset(offset + squareSize * 0.02f, offset + squareSize * 0.05f)
+            )
+            
+            // Main shape with color-preserving gradient
+            drawRoundRect(
+                brush = gameplayGradient(color),
+                size = androidx.compose.ui.geometry.Size(squareSize, squareSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+                topLeft = Offset(offset, offset)
+            )
+            
+            // Minimal highlight that preserves color accuracy
+            drawRoundRect(
+                color = lightHighlight(),
+                topLeft = Offset(offset + squareSize * 0.12f, offset + squareSize * 0.1f),
+                size = androidx.compose.ui.geometry.Size(squareSize * 0.6f, squareSize * 0.12f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner * 0.5f, corner * 0.5f)
+            )
+            
+            // Clean border
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.2f),
+                size = androidx.compose.ui.geometry.Size(squareSize, squareSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+                topLeft = Offset(offset, offset),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = size * 0.02f)
+            )
         }
-
         ShapeType.TRIANGLE -> {
-            val scale = 0.85f
+            val scale = 0.92f  // Increased from 0.85f to use more space
             val scaledSize = size * scale
             val offset = (size - scaledSize) / 2f
-
-            val path = Path().apply {
-                moveTo(offset + scaledSize / 2f, offset)
-                lineTo(offset + scaledSize, offset + scaledSize)
-                lineTo(offset, offset + scaledSize)
+            
+            // Create main triangle path with better space usage
+            val mainPath = Path().apply {
+                moveTo(offset + scaledSize / 2f, offset + scaledSize * 0.05f)  // Moved closer to top
+                lineTo(offset + scaledSize * 0.95f, offset + scaledSize * 0.93f)  // Wider base
+                lineTo(offset + scaledSize * 0.05f, offset + scaledSize * 0.93f)
                 close()
             }
-            drawPath(path, color)
-        }
-
-        ShapeType.HEXAGON -> {
-            val scale = 0.9f
-            val scaledSize = size * scale
-            val offset = (size - scaledSize) / 2f
-            val radius = scaledSize / 2f
-            val centerX = offset + radius
-            val centerY = offset + radius
-
-            val path = Path().apply {
-
-                moveTo(centerX, centerY - radius)
-                lineTo(centerX + radius * 0.866f, centerY - radius * 0.5f)
-                lineTo(centerX + radius * 0.866f, centerY + radius * 0.5f)
-                lineTo(centerX, centerY + radius)
-                lineTo(centerX - radius * 0.866f, centerY + radius * 0.5f)
-                lineTo(centerX - radius * 0.866f, centerY - radius * 0.5f)
+            
+            // Simple shadow path matching the larger triangle
+            val shadowPath = Path().apply {
+                moveTo(offset + scaledSize / 2f + scaledSize * 0.02f, offset + scaledSize * 0.05f + scaledSize * 0.05f)
+                lineTo(offset + scaledSize * 0.95f + scaledSize * 0.02f, offset + scaledSize * 0.93f + scaledSize * 0.05f)
+                lineTo(offset + scaledSize * 0.05f + scaledSize * 0.02f, offset + scaledSize * 0.93f + scaledSize * 0.05f)
                 close()
             }
-            drawPath(path, color)
-        }
-
-        ShapeType.DIAMOND -> {
-            val scale = 0.85f
-            val scaledSize = size * scale
-            val offset = (size - scaledSize) / 2f
-            val centerX = offset + scaledSize / 2f
-            val centerY = offset + scaledSize / 2f
-            val halfSize = scaledSize / 2f
-
-            val path = Path().apply {
-                moveTo(centerX, centerY - halfSize)  // Top point
-                lineTo(centerX + halfSize, centerY)  // Right point
-                lineTo(centerX, centerY + halfSize)  // Bottom point
-                lineTo(centerX - halfSize, centerY)  // Left point
+            
+            // Draw shadow
+            drawPath(
+                path = shadowPath,
+                color = subtleShadow(color)
+            )
+            
+            // Main triangle with color-preserving gradient
+            drawPath(mainPath, brush = gameplayGradient(color))
+            
+            // Simple highlight that doesn't interfere with color, scaled for larger triangle
+            val topHighlight = Path().apply {
+                moveTo(offset + scaledSize / 2f, offset + scaledSize * 0.1f)
+                lineTo(offset + scaledSize * 0.65f, offset + scaledSize * 0.35f)
+                lineTo(offset + scaledSize * 0.35f, offset + scaledSize * 0.35f)
                 close()
             }
-            drawPath(path, color)
+            drawPath(
+                path = topHighlight,
+                color = lightHighlight()
+            )
+            
+            // Clean border
+            drawPath(
+                path = mainPath,
+                color = Color.White.copy(alpha = 0.2f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = size * 0.02f,
+                    join = androidx.compose.ui.graphics.StrokeJoin.Round,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                )
+            )
         }
     }
 }

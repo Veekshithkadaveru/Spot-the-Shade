@@ -24,7 +24,7 @@ data class GameState(
 )
 
 enum class ShapeType {
-    CIRCLE, SQUARE, TRIANGLE, HEXAGON, DIAMOND
+    CIRCLE, SQUARE, TRIANGLE
 }
 
 enum class GameResult {
