@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -92,52 +94,67 @@ fun GridItem(
     val pressScale = remember { Animatable(1f) }
     val haptic = LocalHapticFeedback.current
 
-    // Multiple animation layers for beautiful reveal effect
+    // Multiple animation layers for beautiful reveal effect - only when revealing
     val infiniteTransition = rememberInfiniteTransition(label = "reveal")
 
-    // Pulsing border animation
-    val revealAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "revealAlpha"
-    )
+    // Conditional animations to prevent memory leaks when not revealing
+    val revealAlpha by if (isRevealing) {
+        infiniteTransition.animateFloat(
+            initialValue = 0.3f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(800),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "revealAlpha"
+        )
+    } else {
+        remember { mutableFloatStateOf(0.3f) }
+    }
 
-    // Breathing scale animation
-    val revealScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "revealScale"
-    )
+    val revealScale by if (isRevealing) {
+        infiniteTransition.animateFloat(
+            initialValue = 1.0f,
+            targetValue = 1.05f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1200),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "revealScale"
+        )
+    } else {
+        remember { mutableFloatStateOf(1.0f) }
+    }
 
-    // Shimmer rotation effect
-    val revealRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "revealRotation"
-    )
+    // Conditional shimmer rotation effect - only when revealing
+    val revealRotation by if (isRevealing) {
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(3000),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "revealRotation"
+        )
+    } else {
+        remember { mutableFloatStateOf(0f) }
+    }
 
-    // Glow intensity
-    val glowIntensity by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowIntensity"
-    )
+    // Conditional glow intensity - only when revealing
+    val glowIntensity by if (isRevealing) {
+        infiniteTransition.animateFloat(
+            initialValue = 0.4f,
+            targetValue = 0.8f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "glowIntensity"
+        )
+    } else {
+        remember { mutableFloatStateOf(0.4f) }
+    }
 
     Box(
         modifier = Modifier.size(itemSize)
@@ -446,7 +463,9 @@ fun DrawScope.drawShape(shape: ShapeType, color: Color, size: Float) {
 @Composable
 fun EnhancedParticleBurst(visible: Boolean, itemSize: Dp) {
     if (!visible) return
-    val particleCount = 20
+    
+    // Reduced particle count for better performance and memory usage
+    val particleCount = 12 // Reduced from 20 to 12
     val maxRadius = itemSize.value * 0.8f
     val colors = listOf(
         Color(0xFF4CAF50), Color(0xFF81C784), Color(0xFFC8E6C9), 
@@ -455,7 +474,22 @@ fun EnhancedParticleBurst(visible: Boolean, itemSize: Dp) {
     val animatables = remember { List(particleCount) { Animatable(0f) } }
     val scaleAnimatables = remember { List(particleCount) { Animatable(1f) } }
     
+    // Cleanup animations when component disposes
+    DisposableEffect(Unit) {
+        onDispose {
+            // No need to stop animations explicitly - they will be garbage collected
+            // when the remember scope is disposed. This is just a marker for cleanup.
+        }
+    }
+    
     LaunchedEffect(visible) {
+        if (!visible) {
+            // Reset animations when not visible
+            animatables.forEach { it.snapTo(0f) }
+            scaleAnimatables.forEach { it.snapTo(1f) }
+            return@LaunchedEffect
+        }
+        
         animatables.forEachIndexed { i, anim ->
             launch {
                 anim.animateTo(1f, animationSpec = tween(durationMillis = 1000, delayMillis = i * 15))

@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("kotlin-kapt")
+    id("com.google.devtools.ksp")
     id("dagger.hilt.android.plugin")
 }
 
@@ -36,9 +36,6 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
-    kapt {
-        correctErrorTypes = true
-    }
     buildFeatures {
         compose = true
     }
@@ -64,10 +61,13 @@ dependencies {
     // DataStore for persistence
     implementation(libs.androidx.datastore.preferences)
     
-    // Hilt
-    implementation("com.google.dagger:hilt-android:2.51.1")
-    kapt("com.google.dagger:hilt-compiler:2.51.1")
+    // Hilt - using KSP for better Kotlin 2.1.0 compatibility
+    implementation("com.google.dagger:hilt-android:2.53.1")
+    ksp("com.google.dagger:hilt-compiler:2.53.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    
+    // Lifecycle for process lifecycle management
+    implementation("androidx.lifecycle:lifecycle-process:${libs.versions.lifecycleRuntimeKtx.get()}")
     
     // TODO: REWARDED AD INTEGRATION - Add AdMob Dependencies
     // Uncomment these lines when ready to integrate rewarded ads:
