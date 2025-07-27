@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 // TODO: REWARDED AD INTEGRATION - OVERALL STRATEGY
@@ -56,6 +58,9 @@ sealed class GameUiEvent {
         GameUiEvent()
 }
 
+// Helper data class for atomic state extraction
+private data class Tuple4<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
 @HiltViewModel
 class GameViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager,
@@ -65,6 +70,8 @@ class GameViewModel @Inject constructor(
 
     private val gridGenerator = GridGenerator()
     private var timerJob: Job? = null
+
+    private val gameStateMutex = Mutex()
 
     private val _gameState = MutableStateFlow(GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
@@ -82,25 +89,45 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Thread-safe state update function that prevents race conditions
+     */
+    private suspend fun updateGameState(transform: (GameState) -> GameState) {
+        gameStateMutex.withLock {
+            _gameState.value = transform(_gameState.value)
+        }
+    }
+
+    /**
+     * Get current state safely within a mutex lock
+     */
+    private suspend fun <T> withCurrentState(action: (GameState) -> T): T {
+        return gameStateMutex.withLock {
+            action(_gameState.value)
+        }
+    }
+
     fun startGame() {
         viewModelScope.launch {
-
             timerJob?.cancel()
 
             preferencesManager.incrementGamesPlayed()
 
             val grid = gridGenerator.generateGrid(level = 1)
             val currentShape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
-            _gameState.value = GameState(
-                grid = grid,
-                isGameActive = true,
-                score = 0,
-                level = 1,
-                gameResult = null,
-                hasUsedExtraTime = false,
-                lives = 3,
-                currentShape = currentShape
-            )
+
+            updateGameState {
+                GameState(
+                    grid = grid,
+                    isGameActive = true,
+                    score = 0,
+                    level = 1,
+                    gameResult = null,
+                    hasUsedExtraTime = false,
+                    lives = 3,
+                    currentShape = currentShape
+                )
+            }
 
             // Start countdown timer with dynamic duration
             startTimer(gridGenerator.getTimerDuration(1))
@@ -108,102 +135,125 @@ class GameViewModel @Inject constructor(
     }
 
     fun nextLevel() {
-        val currentState = _gameState.value
         viewModelScope.launch {
             timerJob?.cancel()
 
-            val grid = gridGenerator.generateGrid(level = currentState.level)
-            val currentShape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
-            _gameState.value = currentState.copy(
-                grid = grid,
-                isGameActive = true,
-                gameResult = null,
-                hasUsedExtraTime = false,
-                currentShape = currentShape
-            )
+            val (currentLevel, grid, currentShape) = withCurrentState { currentState ->
+                val grid = gridGenerator.generateGrid(level = currentState.level)
+                val shape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
+                Triple(currentState.level, grid, shape)
+            }
+
+            updateGameState { currentState ->
+                currentState.copy(
+                    grid = grid,
+                    isGameActive = true,
+                    gameResult = null,
+                    hasUsedExtraTime = false,
+                    currentShape = currentShape
+                )
+            }
 
             // Start countdown timer with dynamic duration
-            startTimer(gridGenerator.getTimerDuration(currentState.level))
+            startTimer(gridGenerator.getTimerDuration(currentLevel))
         }
     }
 
     private fun startTimer(totalSeconds: Int = gridGenerator.getTimerDuration(1)) {
+        viewModelScope.launch {
+            // Atomically set initial timer state
+            updateGameState { it.copy(timeRemaining = totalSeconds) }
 
-        _gameState.value = _gameState.value.copy(timeRemaining = totalSeconds)
+            timerJob = viewModelScope.launch {
+                for (timeLeft in (totalSeconds - 1) downTo 0) {
+                    delay(1000)
 
-        timerJob = viewModelScope.launch {
+                    // Check game state atomically before processing
+                    val isActive = withCurrentState { it.isGameActive }
+                    if (!isActive) return@launch
 
-            for (timeLeft in (totalSeconds - 1) downTo 0) {
-                delay(1000)
+                    when (timeLeft) {
+                        5 -> {
+                            soundManager.playTimeoutSound()
+                            _uiEvents.emit(GameUiEvent.TimeWarning)
+                        }
 
-                val currentState = _gameState.value
-                if (!currentState.isGameActive) return@launch
+                        3 -> {
+                            _uiEvents.emit(GameUiEvent.TimeCritical)
+                        }
 
-                when (timeLeft) {
-                    5 -> {
-                        soundManager.playTimeoutSound()
-                        _uiEvents.emit(GameUiEvent.TimeWarning)
+                        1 -> {
+                            _uiEvents.emit(GameUiEvent.TimeUrgent)
+                        }
                     }
 
-                    3 -> {
-                        _uiEvents.emit(GameUiEvent.TimeCritical)
-                    }
-
-                    1 -> {
-                        _uiEvents.emit(GameUiEvent.TimeUrgent)
-                    }
+                    // Atomically update timer state
+                    updateGameState { it.copy(timeRemaining = timeLeft) }
                 }
 
-                _gameState.value = currentState.copy(timeRemaining = timeLeft)
-            }
+                // Handle timeout atomically - this prevents race condition with user taps
+                val shouldHandleTimeout = withCurrentState { state ->
+                    state.isGameActive
+                }
 
-            val currentState = _gameState.value
-            if (currentState.isGameActive) {
-
-                _uiEvents.emit(GameUiEvent.Timeout)
-                handleLifeLoss(GameResult.Timeout)
+                if (shouldHandleTimeout) {
+                    _uiEvents.emit(GameUiEvent.Timeout)
+                    handleLifeLoss(GameResult.Timeout)
+                }
             }
         }
     }
 
     fun onGridItemTapped(itemId: Int) {
-        val currentState = _gameState.value
-        if (!currentState.isGameActive) return
-
-        // Immediately set game inactive to prevent multiple rapid clicks
-        _gameState.value = currentState.copy(isGameActive = false)
-
-        timerJob?.cancel()
-
-        val tappedItem = currentState.grid.find { it.id == itemId }
-        if (tappedItem == null) {
-            // Restore game state if item not found
-            _gameState.value = currentState.copy(isGameActive = true)
-            return
-        }
-
         viewModelScope.launch {
-            if (tappedItem.isTarget) {
+            // Atomically check and update game state to prevent race conditions
+            val (shouldProcess, tappedItem) = withCurrentState { currentState ->
+                if (!currentState.isGameActive) {
+                    false to null
+                } else {
+                    val item = currentState.grid.find { it.id == itemId }
+                    true to item
+                }
+            }
 
+            if (!shouldProcess) return@launch
+
+            timerJob?.cancel()
+            updateGameState { it.copy(isGameActive = false) }
+
+            if (tappedItem == null) {
+                // Restore game state if item not found
+                updateGameState { it.copy(isGameActive = true) }
+                return@launch
+            }
+
+            if (tappedItem.isTarget) {
                 soundManager.stopTimeoutSound()
 
                 _uiEvents.emit(GameUiEvent.CorrectTap(itemId))
                 _uiEvents.emit(GameUiEvent.LevelUp)
                 soundManager.playCorrectSound()
 
-                val currentState = _gameState.value
-                val newLevel = currentState.level + 1
-                val newScore = currentState.score + (10 * currentState.level)
+                // Calculate new values atomically
+                val (newLevel, newScore) = withCurrentState { currentState ->
+                    val level = currentState.level + 1
+                    val score = currentState.score + (10 * currentState.level)
+                    level to score
+                }
 
+                // Update preferences
                 preferencesManager.incrementCorrectAnswers()
                 preferencesManager.updateHighScore(newScore)
                 preferencesManager.updateHighestLevel(newLevel)
 
-                _gameState.value = currentState.copy(
-                    score = newScore,
-                    level = newLevel,
-                    isGameActive = false
-                )
+                // Atomically update game state with new values
+                updateGameState { currentState ->
+                    currentState.copy(
+                        score = newScore,
+                        level = newLevel,
+                        isGameActive = false
+                    )
+                }
 
                 delay(400)
                 nextLevel()
@@ -220,12 +270,10 @@ class GameViewModel @Inject constructor(
     }
 
     fun resetGame() {
-        timerJob?.cancel()
-        _gameState.value = GameState()
-    }
-
-    fun playAgain() {
-        startGame()
+        viewModelScope.launch {
+            timerJob?.cancel()
+            updateGameState { GameState() }
+        }
     }
 
     // TODO: REWARDED AD INTEGRATION - Extra Time
@@ -237,39 +285,45 @@ class GameViewModel @Inject constructor(
     // 4. Track ad completion analytics
     // 5. Limit extra time usage to once per game session (already implemented)
     fun useExtraTime() {
-        val currentState = _gameState.value
-        if (currentState.gameResult == GameResult.Timeout && !currentState.hasUsedExtraTime) {
-            // TODO: Replace direct grant with rewarded ad flow
+        viewModelScope.launch {
+            val canUseExtraTime = withCurrentState { currentState ->
+                currentState.gameResult == GameResult.Timeout && !currentState.hasUsedExtraTime
+            }
 
-            val restoredLives = currentState.lives + 1
+            if (canUseExtraTime) {
+                // TODO: Replace direct grant with rewarded ad flow
+                updateGameState { currentState ->
+                    val restoredLives = currentState.lives + 1
+                    currentState.copy(
+                        isGameActive = true,
+                        gameResult = null,
+                        hasUsedExtraTime = true,
+                        lives = restoredLives
+                    )
+                }
 
-            _gameState.value = currentState.copy(
-                isGameActive = true,
-                gameResult = null,
-                hasUsedExtraTime = true,
-                lives = restoredLives
-            )
-
-            startTimer(5)
+                startTimer(5)
+            }
         }
     }
 
     private suspend fun handleLifeLoss(resultType: GameResult) {
-        val currentState = _gameState.value
-        val newLives = currentState.lives - 1
-
         // Stop timer during life loss handling
         timerJob?.cancel()
 
-        if (newLives < 0) {
+        val shouldEndGame = withCurrentState { currentState ->
+            val newLives = currentState.lives - 1
+            newLives < 0 || (newLives == 0 && resultType == GameResult.Wrong)
+        }
+
+        if (shouldEndGame) {
             endGame()
             return
         }
 
-        if (newLives == 0 && resultType == GameResult.Wrong) {
-            endGame()
-        } else {
-            _gameState.value = currentState.copy(
+        updateGameState { currentState ->
+            val newLives = currentState.lives - 1
+            currentState.copy(
                 gameResult = resultType,
                 isGameActive = false,
                 lives = newLives,
@@ -279,37 +333,42 @@ class GameViewModel @Inject constructor(
     }
 
     fun declineExtraTime() {
-        val currentState = _gameState.value
-        if (currentState.lives > 0) {
-            _gameState.value = currentState.copy(gameResult = GameResult.OfferContinue)
-        } else {
-            endGame()
+        viewModelScope.launch {
+            val shouldEndGame = withCurrentState { it.lives <= 0 }
+
+            if (shouldEndGame) {
+                endGame()
+            } else {
+                updateGameState { it.copy(gameResult = GameResult.OfferContinue) }
+            }
         }
     }
 
     fun endGame() {
-        val currentState = _gameState.value
         viewModelScope.launch {
             // Stop the timer immediately for answer reveal
             timerJob?.cancel()
 
-            preferencesManager.updateHighScore(currentState.score)
-            preferencesManager.updateHighestLevel(currentState.level)
+            val (currentScore, currentLevel, targetId, lastResult) = withCurrentState { currentState ->
+                Tuple4(
+                    currentState.score,
+                    currentState.level,
+                    currentState.grid.find { it.isTarget }?.id,
+                    currentState.gameResult
+                )
+            }
 
-            // Check if any themes should be unlocked based on achievements
+            preferencesManager.updateHighScore(currentScore)
+            preferencesManager.updateHighestLevel(currentLevel)
+
             checkThemeUnlockMilestones()
 
-            // Show professional answer reveal sequence
-            val targetId = currentState.grid.find { it.isTarget }?.id
             targetId?.let {
-
                 _uiEvents.emit(GameUiEvent.RevealAnswer(it))
                 delay(500)
 
-                // Play game over sound after reveal starts
                 soundManager.playGameOverSound()
 
-                // Hold the reveal for learning - timer is stopped
                 delay(2500)
 
                 // Emit game over after reveal completes
@@ -322,38 +381,44 @@ class GameViewModel @Inject constructor(
                 delay(300)
             }
 
-            _gameState.value = currentState.copy(
-                gameResult = GameResult.GameOver,
-                isGameActive = false,
-                lives = 0,
-                timeRemaining = 0,
-                lastEndingReason = currentState.gameResult,
-                revealTargetId = targetId
-            )
-        }
-    }
-
-    fun continueAfterLifeLoss() {
-        val currentState = _gameState.value
-        if (currentState.lives > 0 && currentState.gameResult != GameResult.GameOver) {
-
-            viewModelScope.launch {
-                timerJob?.cancel()
-
-                _gameState.value = currentState.copy(
-                    isGameActive = true,
-                    gameResult = null,
-                    hasUsedExtraTime = false
+            // Atomically update final game state
+            updateGameState { currentState ->
+                currentState.copy(
+                    gameResult = GameResult.GameOver,
+                    isGameActive = false,
+                    lives = 0,
+                    timeRemaining = 0,
+                    lastEndingReason = lastResult,
+                    revealTargetId = targetId
                 )
-
-                startTimer(gridGenerator.getTimerDuration(_gameState.value.level))
             }
         }
     }
 
-    fun setSoundEnabled(enabled: Boolean) {
-        soundManager.setSoundEnabled(enabled)
+    fun continueAfterLifeLoss() {
+        viewModelScope.launch {
+            val (canContinue, currentLevel) = withCurrentState { currentState ->
+                val canContinue =
+                    currentState.lives > 0 && currentState.gameResult != GameResult.GameOver
+                canContinue to currentState.level
+            }
+
+            if (canContinue) {
+                timerJob?.cancel()
+
+                updateGameState { currentState ->
+                    currentState.copy(
+                        isGameActive = true,
+                        gameResult = null,
+                        hasUsedExtraTime = false
+                    )
+                }
+
+                startTimer(gridGenerator.getTimerDuration(currentLevel))
+            }
+        }
     }
+
 
     fun toggleSound() {
         viewModelScope.launch {
@@ -442,6 +507,12 @@ class GameViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+
+        timerJob?.cancel()
+
+        // Stop any ongoing sounds to prevent audio glitches
+        soundManager.stopTimeoutSound()
+
     }
 }
 
