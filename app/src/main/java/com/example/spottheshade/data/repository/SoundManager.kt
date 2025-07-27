@@ -19,11 +19,18 @@ class SoundManager @Inject constructor(
     
     private var soundEnabled = true
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val soundPool: SoundPool
+    private var soundPool: SoundPool? = null
     private val soundMap = mutableMapOf<SoundType, Int>()
     private var currentTimeoutStreamId: Int? = null
+    private var isReleased = false
 
     init {
+        initializeSoundPool()
+    }
+    
+    private fun initializeSoundPool() {
+        if (soundPool != null || isReleased) return
+        
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -38,11 +45,12 @@ class SoundManager @Inject constructor(
     }
 
     private fun loadSounds() {
+        val pool = soundPool ?: return
         try {
-            soundMap[SoundType.CORRECT] = soundPool.load(context, R.raw.correct_sound, 1)
-            soundMap[SoundType.WRONG] = soundPool.load(context, R.raw.wrong_sound, 1)
-            soundMap[SoundType.TIMEOUT] = soundPool.load(context, R.raw.timeout_sound, 1)
-            soundMap[SoundType.GAME_OVER] = soundPool.load(context, R.raw.game_over_sound, 1)
+            soundMap[SoundType.CORRECT] = pool.load(context, R.raw.correct_sound, 1)
+            soundMap[SoundType.WRONG] = pool.load(context, R.raw.wrong_sound, 1)
+            soundMap[SoundType.TIMEOUT] = pool.load(context, R.raw.timeout_sound, 1)
+            soundMap[SoundType.GAME_OVER] = pool.load(context, R.raw.game_over_sound, 1)
         } catch (e: android.content.res.Resources.NotFoundException) {
             // Sound file not found in resources
             android.util.Log.e("SoundManager", "Sound file not found in resources", e)
@@ -56,14 +64,15 @@ class SoundManager @Inject constructor(
     }
 
     private fun playSound(soundType: SoundType, volume: Float = 1.0f, rate: Float = 1.0f) {
-        if (!soundEnabled) return
-
+        if (!soundEnabled || isReleased) return
+        
+        val pool = soundPool ?: return
         val streamVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         if (streamVolume == 0) return
 
         scope.launch(Dispatchers.IO) {
             soundMap[soundType]?.let { soundId ->
-                val streamId = soundPool.play(soundId, volume, volume, 1, 0, rate)
+                val streamId = pool.play(soundId, volume, volume, 1, 0, rate)
                 if (soundType == SoundType.TIMEOUT) {
                     currentTimeoutStreamId = streamId
                 }
@@ -90,20 +99,32 @@ class SoundManager @Inject constructor(
     fun setSoundEnabled(enabled: Boolean) {
         soundEnabled = enabled
     }
-    
-    fun isSoundEnabled(): Boolean = soundEnabled
-    
+
     fun stopTimeoutSound() {
         currentTimeoutStreamId?.let { streamId ->
-            soundPool.stop(streamId)
+            soundPool?.stop(streamId)
             currentTimeoutStreamId = null
         }
     }
     
     fun release() {
-        soundPool.release()
+        if (isReleased) return
+        
+        isReleased = true
+        currentTimeoutStreamId = null
+        soundMap.clear()
+        
+        soundPool?.release()
+        soundPool = null
     }
     
+    /**
+     * Call this method when the app goes to background to save battery
+     */
+    fun onAppBackground() {
+        stopTimeoutSound()
+    }
+
     enum class SoundType {
         CORRECT,
         WRONG, 

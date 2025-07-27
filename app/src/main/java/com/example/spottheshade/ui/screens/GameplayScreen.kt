@@ -73,13 +73,27 @@ fun GameplayScreen(
 
     LaunchedEffect(gameState.grid) {
         val currentIds = gameState.grid.map { it.id }.toSet()
-        itemAnimations.keys.retainAll { id -> id in currentIds }
+        
+        // Clean up animations for items that no longer exist
+        val itemsToRemove = itemAnimations.keys.filterNot { id -> id in currentIds }
+        itemsToRemove.forEach { id ->
+            itemAnimations.remove(id)
+        }
+        
+        // Prevent memory leaks by limiting animation map size
+        if (itemAnimations.size > 100) {
+            android.util.Log.w("GameplayScreen", "Animation map size exceeded 100, clearing old animations")
+            itemAnimations.clear()
+        }
 
         revealedTargetId = null
     }
 
+    // Add animations for new items only, with size limit check
     gameState.grid.forEach { item ->
-        itemAnimations.putIfAbsent(item.id, Animatable(1f))
+        if (!itemAnimations.containsKey(item.id) && itemAnimations.size < 100) {
+            itemAnimations[item.id] = Animatable(1f)
+        }
     }
 
     // Start game when screen loads
@@ -197,10 +211,12 @@ fun GameplayScreen(
         }
     }
 
-    // Cleanup timer when leaving screen
+    // Cleanup timer and animations when leaving screen
     DisposableEffect(Unit) {
         onDispose {
             viewModel.resetGame()
+            // Clear all animations to prevent memory leaks
+            itemAnimations.clear()
         }
     }
 
