@@ -141,7 +141,6 @@ fun GameplayScreen(
                         gridShakeAnimation.animateTo(5f, tween(50))
                         gridShakeAnimation.animateTo(0f, spring())
                     }
-
                 }
 
                 is GameUiEvent.Timeout -> {
@@ -196,11 +195,13 @@ fun GameplayScreen(
     // Professional game over transition with refined timing
     LaunchedEffect(gameState.gameResult) {
         if (gameState.gameResult == GameResult.GameOver) {
-
             delay(500)
-            navController.navigate(Screen.GameOver.createRoute(gameState.score, gameState.level)) {
-                popUpTo(Screen.MainMenu.route) { inclusive = false }
-            }
+            viewModel.navigationHelper.safeNavigate(
+                navController = navController,
+                route = Screen.GameOver.createRoute(gameState.score, gameState.level),
+                popUpTo = Screen.MainMenu.route,
+                inclusive = false
+            )
         }
     }
 
@@ -320,6 +321,6 @@ fun GameplayScreen(
         onContinue = { viewModel.continueAfterLifeLoss() },
         onDeclineExtraTime = { viewModel.declineExtraTime() },
         onUseExtraTime = { viewModel.useExtraTime() },
-        onGoToMenu = { navController.popBackStack() }
+        onGoToMenu = { viewModel.navigationHelper.safePopBackStack(navController) }
     )
 }

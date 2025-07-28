@@ -146,7 +146,12 @@ fun MainMenuScreen(
                 subText = "HIGH SCORE: ${if (userPreferences.highScore > 0) "${userPreferences.highScore}" else "0"}",
                 gradientColors = themeColors.buttonPrimary,
                 textColor = themeColors.textOnButton,
-                onClick = { navController.navigate(Screen.Gameplay.route) },
+                onClick = { 
+                    viewModel.navigationHelper.safeNavigate(
+                        navController = navController,
+                        route = Screen.Gameplay.route
+                    )
+                },
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
@@ -158,7 +163,10 @@ fun MainMenuScreen(
                 textColor = themeColors.textOnButton,
                 onClick = {
                     // TODO: Implement daily challenge navigation
-                    navController.navigate(Screen.Gameplay.route)
+                    viewModel.navigationHelper.safeNavigate(
+                        navController = navController,
+                        route = Screen.Gameplay.route
+                    )
                 },
                 modifier = Modifier.padding(bottom = 24.dp)
             )

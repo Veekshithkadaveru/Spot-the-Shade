@@ -23,18 +23,7 @@ object AppModule {
         return CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 
-    @Provides
-    @Singleton
-    fun providePreferencesManager(@ApplicationContext context: Context): PreferencesManager {
-        return PreferencesManager(context)
-    }
-
-    @Provides
-    @Singleton
-    fun provideSoundManager(
-        @ApplicationContext context: Context,
-        scope: CoroutineScope
-    ): SoundManager {
-        return SoundManager(context, scope)
-    }
+    // Note: PreferencesManager, SoundManager, ErrorFeedbackManager, and NavigationHelper
+    // are now @Singleton classes with @Inject constructors, so Hilt will provide them automatically.
+    // No manual @Provides methods needed anymore.
 }

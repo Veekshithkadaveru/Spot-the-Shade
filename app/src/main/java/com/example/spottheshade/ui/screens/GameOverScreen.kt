@@ -240,7 +240,12 @@ fun GameOverScreen(
             
             // Retry Button
             Button(
-                onClick = { navController.navigate(Screen.Gameplay.route) },
+                onClick = { 
+                    viewModel.navigationHelper.safeNavigate(
+                        navController = navController,
+                        route = Screen.Gameplay.route
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -269,7 +274,12 @@ fun GameOverScreen(
             
             // Main Menu Button
             Button(
-                onClick = { navController.navigate(Screen.MainMenu.route) },
+                onClick = { 
+                    viewModel.navigationHelper.safeNavigate(
+                        navController = navController,
+                        route = Screen.MainMenu.route
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
