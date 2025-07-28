@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.example.spottheshade.ui.theme.ThemeColors
 
 @Composable
@@ -67,6 +69,9 @@ fun TopInfoPanel(
                 shape = RoundedCornerShape(20.dp)
             )
             .padding(16.dp)
+            .semantics {
+                contentDescription = "Game status: Level $level, Score $score out of $highScore best, $lives lives remaining, $timeRemaining seconds left"
+            }
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -106,7 +111,7 @@ fun TopInfoPanel(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Star,
-                            contentDescription = null,
+                            contentDescription = "Score star",
                             tint = Color(0xFFFFD700), // Keep gold star
                             modifier = Modifier.size(16.dp)
                         )
@@ -143,7 +148,12 @@ fun TopInfoPanel(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Lives section
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.semantics {
+                        contentDescription = "$lives out of 3 lives remaining"
+                    }
+                ) {
                     Text(
                         text = "Lives: ",
                         style = MaterialTheme.typography.titleMedium,
@@ -179,10 +189,18 @@ fun TopInfoPanel(
                         timeRemaining <= 10 -> Color(0xFFFF8C00) // Orange
                         else -> themeColors.onSurface
                     },
-                    modifier = Modifier.graphicsLayer {
-                        scaleX = pulseScale
-                        scaleY = pulseScale
-                    }
+                    modifier = Modifier
+                        .graphicsLayer {
+                            scaleX = pulseScale
+                            scaleY = pulseScale
+                        }
+                        .semantics {
+                            contentDescription = when {
+                                timeRemaining <= 5 -> "$timeRemaining seconds remaining - time is running out!"
+                                timeRemaining <= 10 -> "$timeRemaining seconds remaining - hurry up!"
+                                else -> "$timeRemaining seconds remaining"
+                            }
+                        }
                 )
             }
         }

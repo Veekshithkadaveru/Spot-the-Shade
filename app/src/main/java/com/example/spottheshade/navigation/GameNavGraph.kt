@@ -32,7 +32,7 @@ fun GameNavGraph(navController: NavHostController) {
         ) { backStackEntry ->
             val score = backStackEntry.arguments?.getInt("score") ?: 0
             val level = backStackEntry.arguments?.getInt("level") ?: 1
-            GameOverScreen(navController, score, level)
+            GameOverScreen(navController, score)
         }
     }
 } 

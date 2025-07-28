@@ -35,6 +35,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.spottheshade.data.model.UserPreferences
@@ -104,11 +108,19 @@ fun MainMenuScreen(
                 IconButton(
                     onClick = { viewModel.toggleSound() },
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .background(
                             color = themeColors.overlayColor,
                             shape = CircleShape
                         )
+                        .semantics {
+                            contentDescription = if (userPreferences.soundEnabled) {
+                                "Sound enabled. Tap to turn off sound"
+                            } else {
+                                "Sound disabled. Tap to turn on sound"
+                            }
+                            role = Role.Button
+                        }
                 ) {
                     Text(
                         text = if (userPreferences.soundEnabled) "🔊" else "🔇",
@@ -152,7 +164,8 @@ fun MainMenuScreen(
                         route = Screen.Gameplay.route
                     )
                 },
-                modifier = Modifier.padding(bottom = 24.dp)
+                modifier = Modifier.padding(bottom = 24.dp),
+                contentDescription = "Start new game. Current high score: ${userPreferences.highScore}"
             )
 
             // Daily Challenge button - use theme-specific secondary colors
@@ -168,7 +181,8 @@ fun MainMenuScreen(
                         route = Screen.Gameplay.route
                     )
                 },
-                modifier = Modifier.padding(bottom = 24.dp)
+                modifier = Modifier.padding(bottom = 24.dp),
+                contentDescription = "Start daily challenge game"
             )
             
             // Theme Selector
@@ -194,7 +208,8 @@ fun GradientButton(
     gradientColors: List<Color>,
     textColor: Color = White,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null
 ) {
     Button(
         onClick = onClick,
@@ -204,6 +219,14 @@ fun GradientButton(
             .shadow(
                 elevation = 8.dp,
                 shape = RoundedCornerShape(25.dp)
+            )
+            .then(
+                if (contentDescription != null) {
+                    Modifier.semantics {
+                        this.contentDescription = contentDescription
+                        role = Role.Button
+                    }
+                } else Modifier
             ),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent

@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,9 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -40,20 +37,20 @@ import androidx.navigation.NavHostController
 import com.example.spottheshade.data.model.GameResult
 import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.navigation.Screen
-import com.example.spottheshade.ui.theme.GradientGreen
 import com.example.spottheshade.ui.theme.LocalThemeColors
-import com.example.spottheshade.ui.theme.PurpleBackground
-import com.example.spottheshade.ui.theme.White
 import com.example.spottheshade.viewmodel.GameViewModel
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun GameOverScreen(
     navController: NavHostController,
     finalScore: Int,
-    finalLevel: Int,
     viewModel: GameViewModel = hiltViewModel()
 ) {
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
@@ -97,7 +94,11 @@ fun GameOverScreen(
                         blurRadius = 8f
                     )
                 ),
-                modifier = Modifier.padding(bottom = 40.dp)
+                modifier = Modifier
+                    .padding(bottom = 40.dp)
+                    .semantics {
+                        contentDescription = "Game ended: $gameOverMessage"
+                    }
             )
             
             // Premium Score Card
@@ -135,6 +136,13 @@ fun GameOverScreen(
                             shape = RoundedCornerShape(20.dp)
                         )
                         .padding(24.dp)
+                        .semantics {
+                            contentDescription = if (finalScore > userPreferences.highScore) {
+                                "New high score! Final score: $finalScore. Previous best: ${userPreferences.highScore}"
+                            } else {
+                                "Final score: $finalScore. Best score: ${userPreferences.highScore}"
+                            }
+                        }
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -219,7 +227,10 @@ fun GameOverScreen(
                                 ) {
                                     Text(
                                         text = "🏆",
-                                        fontSize = 24.sp
+                                        fontSize = 24.sp,
+                                        modifier = Modifier.semantics {
+                                            contentDescription = "Trophy for new high score achievement"
+                                        }
                                     )
                                 }
                             }
@@ -249,7 +260,11 @@ fun GameOverScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp)
+                    .semantics {
+                        contentDescription = "Start a new game"
+                        role = Role.Button
+                    },
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = themeColors.accent
@@ -257,7 +272,7 @@ fun GameOverScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
+                    contentDescription = "Refresh icon",
                     tint = themeColors.textOnButton,
                     modifier = Modifier.size(20.dp)
                 )
@@ -283,7 +298,11 @@ fun GameOverScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp)
+                    .semantics {
+                        contentDescription = "Return to main menu"
+                        role = Role.Button
+                    },
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = themeColors.primary
@@ -291,7 +310,7 @@ fun GameOverScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Home,
-                    contentDescription = null,
+                    contentDescription = "Home icon",
                     tint = themeColors.textOnButton,
                     modifier = Modifier.size(20.dp)
                 )

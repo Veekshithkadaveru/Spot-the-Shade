@@ -34,6 +34,10 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import com.example.spottheshade.data.model.ThemeType
 import com.example.spottheshade.data.model.UserPreferences
 import com.example.spottheshade.data.repository.HapticManager
@@ -65,12 +69,19 @@ fun ThemeSelector(
                     blurRadius = 4f
                 )
             ),
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier
+                .padding(bottom = 16.dp)
+                .semantics {
+                    contentDescription = "Theme selection section. Swipe to browse available themes"
+                }
         )
         
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            modifier = Modifier.semantics {
+                contentDescription = "Horizontal scrollable list of game themes"
+            }
         ) {
             items(ThemeType.entries.toTypedArray()) { theme ->
                 ThemeCard(
@@ -128,6 +139,19 @@ fun ThemeCard(
                 rotationZ = rotation
             }
             .border(3.dp, borderColor, RoundedCornerShape(16.dp))
+            .semantics {
+                val themeName = getThemeDisplayName(theme)
+                contentDescription = if (isUnlocked) {
+                    if (isSelected) {
+                        "$themeName theme - currently selected"
+                    } else {
+                        "$themeName theme - tap to select"
+                    }
+                } else {
+                    "$themeName theme - locked. ${getUnlockText(theme)}. Tap to unlock with ad"
+                }
+                role = Role.Button
+            }
             .clickable {
 
                 if (hapticManager != null) {
@@ -207,7 +231,7 @@ fun ThemeCard(
                 if (isSelected) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Selected",
+                        contentDescription = "Currently selected theme indicator",
                         tint = Color.White,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -233,7 +257,7 @@ fun ThemeCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Lock,
-                        contentDescription = "Locked",
+                        contentDescription = "Theme is locked",
                         tint = Color.White.copy(alpha = 0.8f),
                         modifier = Modifier.size(32.dp)
                     )
