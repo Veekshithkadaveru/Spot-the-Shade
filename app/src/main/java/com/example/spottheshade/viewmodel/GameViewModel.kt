@@ -11,6 +11,7 @@ import com.example.spottheshade.data.repository.GridGenerator
 import com.example.spottheshade.data.repository.HapticManager
 import com.example.spottheshade.data.repository.PreferencesManager
 import com.example.spottheshade.data.repository.SoundManager
+import com.example.spottheshade.navigation.NavigationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -65,7 +66,8 @@ private data class Tuple4<A, B, C, D>(val first: A, val second: B, val third: C,
 class GameViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager,
     private val soundManager: SoundManager,
-    private val hapticManager: HapticManager
+    private val hapticManager: HapticManager,
+    val navigationHelper: NavigationHelper
 ) : ViewModel() {
 
     private val gridGenerator = GridGenerator()
@@ -82,7 +84,7 @@ class GameViewModel @Inject constructor(
     val userPreferences = preferencesManager.userPreferences
 
     init {
-        // Initialize sound state with user preferences
+            // Initialize sound state with user preferences
         viewModelScope.launch {
             val prefs = preferencesManager.userPreferences.first()
             soundManager.setSoundEnabled(prefs.soundEnabled)
