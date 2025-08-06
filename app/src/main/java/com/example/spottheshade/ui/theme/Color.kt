@@ -21,6 +21,11 @@ val PlayButtonEnd = Color(0xFF764BA2)
 val DailyChallengeStart = Color(0xFFFF6B6B)
 val DailyChallengeEnd = Color(0xFFFFE66D)
 
+// Locked button gradient colors
+val LockedButtonStart = Color(0xFFB0B0B0)
+val LockedButtonEnd = Color(0xFF8D8D8D)
+
+
 // Text colors
 val TitleTeal = Color(0xFF4ECDC4)
 val White = Color(0xFFFFFFFF)
