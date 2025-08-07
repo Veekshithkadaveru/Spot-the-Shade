@@ -1,5 +1,6 @@
 package com.example.spottheshade.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -30,6 +32,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -51,9 +55,12 @@ import com.example.spottheshade.ui.theme.GradientOrange
 import com.example.spottheshade.ui.theme.GradientYellow
 import com.example.spottheshade.ui.theme.LocalThemeColors
 import com.example.spottheshade.ui.theme.PlayButtonEnd
+import com.example.spottheshade.ui.theme.LockedButtonEnd
+import com.example.spottheshade.ui.theme.LockedButtonStart
 import com.example.spottheshade.ui.theme.PlayButtonStart
 import com.example.spottheshade.ui.theme.White
 import com.example.spottheshade.viewmodel.GameViewModel
+import androidx.compose.foundation.Image
 
 @Composable
 fun MainMenuScreen(
@@ -63,6 +70,7 @@ fun MainMenuScreen(
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val themeColors = LocalThemeColors.current
     val hapticManager = viewModel.getHapticManager()
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -170,19 +178,15 @@ fun MainMenuScreen(
 
             // Daily Challenge button - use theme-specific secondary colors
             GradientButton(
-                text = "DAILY\nCHALLENGE",
+                text = "DAILY CHALLENGE",
                 subText = null,
-                gradientColors = themeColors.buttonSecondary,
-                textColor = themeColors.textOnButton,
+                gradientColors = listOf(LockedButtonStart, LockedButtonEnd),
+                textColor = themeColors.textOnButton.copy(alpha = 0.6f),
                 onClick = {
-                    // TODO: Implement daily challenge navigation
-                    viewModel.navigationHelper.safeNavigate(
-                        navController = navController,
-                        route = Screen.Gameplay.route
-                    )
+                    Toast.makeText(context, "Coming Soon!", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.padding(bottom = 24.dp),
-                contentDescription = "Start daily challenge game"
+                contentDescription = "Daily challenge is locked. This feature is coming soon."
             )
             
             // Theme Selector
@@ -215,7 +219,7 @@ fun GradientButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(if (subText != null) 80.dp else 70.dp)
+            .height(80.dp)
             .shadow(
                 elevation = 8.dp,
                 shape = RoundedCornerShape(25.dp)
@@ -247,19 +251,37 @@ fun GradientButton(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = text,
-                    color = textColor,
-                    fontSize = if (subText != null) 20.sp else 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
                 if (subText != null) {
+                    Text(
+                        text = text,
+                        color = textColor,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                     Text(
                         text = subText,
                         color = textColor.copy(alpha = 0.9f),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = text,
+                            color = textColor,
+                            fontSize = 20.sp, // Consistent font size
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(8.dp)) // Add some space between text and icon
+                        Image(
+                            painter = painterResource(id = com.example.spottheshade.R.drawable.ic_locked),
+                            contentDescription = "Locked",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
         }
