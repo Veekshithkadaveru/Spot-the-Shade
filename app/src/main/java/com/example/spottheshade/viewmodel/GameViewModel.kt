@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 // TODO: REWARDED AD INTEGRATION - OVERALL STRATEGY
 // MONETIZATION OPPORTUNITIES IN THIS GAME:
@@ -86,8 +87,14 @@ class GameViewModel @Inject constructor(
     init {
             // Initialize sound state with user preferences
         viewModelScope.launch {
-            val prefs = preferencesManager.userPreferences.first()
-            soundManager.setSoundEnabled(prefs.soundEnabled)
+            try {
+                val prefs = preferencesManager.userPreferences.first()
+                soundManager.setSoundEnabled(prefs.soundEnabled)
+            } catch (e: Exception) {
+                android.util.Log.w("GameViewModel", "Failed to initialize sound preferences", e)
+                // Use default sound enabled state
+                soundManager.setSoundEnabled(true)
+            }
         }
     }
 
@@ -116,7 +123,7 @@ class GameViewModel @Inject constructor(
             preferencesManager.incrementGamesPlayed()
 
             val grid = gridGenerator.generateGrid(level = 1)
-            val currentShape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
+            val currentShape = grid.firstOrNull()?.shape ?: ShapeType.CIRCLE
 
             updateGameState {
                 GameState(
@@ -142,7 +149,7 @@ class GameViewModel @Inject constructor(
 
             val (currentLevel, grid, currentShape) = withCurrentState { currentState ->
                 val grid = gridGenerator.generateGrid(level = currentState.level)
-                val shape = if (grid.isNotEmpty()) grid.first().shape else ShapeType.CIRCLE
+                val shape = grid.firstOrNull()?.shape ?: ShapeType.CIRCLE
                 Triple(currentState.level, grid, shape)
             }
 
@@ -163,44 +170,72 @@ class GameViewModel @Inject constructor(
 
     private fun startTimer(totalSeconds: Int = gridGenerator.getTimerDuration(1)) {
         viewModelScope.launch {
+            // Cancel any existing timer job to prevent multiple timers
+            timerJob?.cancel()
+            
             // Atomically set initial timer state
             updateGameState { it.copy(timeRemaining = totalSeconds) }
 
             timerJob = viewModelScope.launch {
-                for (timeLeft in (totalSeconds - 1) downTo 0) {
-                    delay(1000)
+                try {
+                    for (timeLeft in (totalSeconds - 1) downTo 0) {
+                        delay(1000)
 
-                    // Check game state atomically before processing
-                    val isActive = withCurrentState { it.isGameActive }
-                    if (!isActive) return@launch
+                        // Atomic check-and-update pattern
+                        val shouldContinue = withCurrentState { state ->
+                            if (state.isGameActive) {
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        
+                        if (!shouldContinue) return@launch
 
-                    when (timeLeft) {
-                        5 -> {
-                            soundManager.playTimeoutSound()
-                            _uiEvents.emit(GameUiEvent.TimeWarning)
+                        when (timeLeft) {
+                            5 -> {
+                                soundManager.playTimeoutSound()
+                                _uiEvents.emit(GameUiEvent.TimeWarning)
+                            }
+
+                            3 -> {
+                                _uiEvents.emit(GameUiEvent.TimeCritical)
+                            }
+
+                            1 -> {
+                                _uiEvents.emit(GameUiEvent.TimeUrgent)
+                            }
                         }
 
-                        3 -> {
-                            _uiEvents.emit(GameUiEvent.TimeCritical)
-                        }
-
-                        1 -> {
-                            _uiEvents.emit(GameUiEvent.TimeUrgent)
+                        // Atomically update timer state only if still active
+                        updateGameState { currentState ->
+                            if (currentState.isGameActive) {
+                                currentState.copy(timeRemaining = timeLeft)
+                            } else {
+                                currentState
+                            }
                         }
                     }
 
-                    // Atomically update timer state
-                    updateGameState { it.copy(timeRemaining = timeLeft) }
-                }
+                    // Handle timeout with double-check pattern
+                    val shouldHandleTimeout = withCurrentState { state ->
+                        if (state.isGameActive) {
+                            true
+                        } else {
+                            false
+                        }
+                    }
 
-                // Handle timeout atomically - this prevents race condition with user taps
-                val shouldHandleTimeout = withCurrentState { state ->
-                    state.isGameActive
-                }
-
-                if (shouldHandleTimeout) {
-                    _uiEvents.emit(GameUiEvent.Timeout)
-                    handleLifeLoss(GameResult.Timeout)
+                    if (shouldHandleTimeout) {
+                        _uiEvents.emit(GameUiEvent.Timeout)
+                        handleLifeLoss(GameResult.Timeout)
+                    }
+                } catch (e: CancellationException) {
+                    // Expected when timer is cancelled - don't handle as error
+                    throw e
+                } catch (e: Exception) {
+                    // Log unexpected errors but don't crash the game
+                    android.util.Log.e("GameViewModel", "Timer error", e)
                 }
             }
         }
@@ -208,7 +243,7 @@ class GameViewModel @Inject constructor(
 
     fun onGridItemTapped(itemId: Int) {
         viewModelScope.launch {
-            // Atomically check and update game state to prevent race conditions
+            // Double-check pattern: atomically verify and mark state as processing
             val (shouldProcess, tappedItem) = withCurrentState { currentState ->
                 if (!currentState.isGameActive) {
                     false to null
@@ -220,12 +255,24 @@ class GameViewModel @Inject constructor(
 
             if (!shouldProcess) return@launch
 
-            timerJob?.cancel()
+            // Atomically transition to processing state to prevent concurrent taps
+            val wasActive = withCurrentState { state ->
+                if (state.isGameActive) {
+                    timerJob?.cancel()
+                    true
+                } else {
+                    false
+                }
+            }
+
+            if (!wasActive) return@launch
+
             updateGameState { it.copy(isGameActive = false) }
 
             if (tappedItem == null) {
-                // Restore game state if item not found
+                // Restore game state if item not found - rare edge case
                 updateGameState { it.copy(isGameActive = true) }
+                startTimer(gridGenerator.getTimerDuration(gameState.value.level))
                 return@launch
             }
 
@@ -424,11 +471,17 @@ class GameViewModel @Inject constructor(
 
     fun toggleSound() {
         viewModelScope.launch {
-            val currentPrefs = preferencesManager.userPreferences.first()
-            val newSoundState = !currentPrefs.soundEnabled
+            try {
+                val currentPrefs = preferencesManager.userPreferences.first()
+                val newSoundState = !currentPrefs.soundEnabled
 
-            preferencesManager.setSoundEnabled(newSoundState)
-            soundManager.setSoundEnabled(newSoundState)
+                preferencesManager.setSoundEnabled(newSoundState)
+                soundManager.setSoundEnabled(newSoundState)
+            } catch (e: Exception) {
+                android.util.Log.w("GameViewModel", "Failed to toggle sound preferences", e)
+                // Fallback: just toggle the sound manager state
+                soundManager.setSoundEnabled(!soundManager.isSoundEnabled)
+            }
         }
     }
 
@@ -470,9 +523,10 @@ class GameViewModel @Inject constructor(
     // Check if user has reached milestones to unlock themes organically
     fun checkThemeUnlockMilestones() {
         viewModelScope.launch {
-            val prefs = preferencesManager.userPreferences.first()
+            try {
+                val prefs = preferencesManager.userPreferences.first()
 
-            // Auto-unlock themes based on achievements
+                // Auto-unlock themes based on achievements
             when {
                 prefs.highestLevel >= 10 && !prefs.unlockedThemes.contains(ThemeType.FOREST) -> {
                     preferencesManager.unlockTheme(ThemeType.FOREST)
@@ -501,6 +555,10 @@ class GameViewModel @Inject constructor(
                 prefs.highScore >= 2000 && !prefs.unlockedThemes.contains(ThemeType.VOLCANIC) -> {
                     preferencesManager.unlockTheme(ThemeType.VOLCANIC)
                 }
+            }
+            } catch (e: Exception) {
+                android.util.Log.w("GameViewModel", "Failed to check theme unlock milestones", e)
+                // Theme unlocks are not critical - game can continue without them
             }
         }
     }
