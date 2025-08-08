@@ -80,18 +80,20 @@ fun GameplayScreen(
             itemAnimations.remove(id)
         }
         
-        // Prevent memory leaks by limiting animation map size
-        if (itemAnimations.size > 100) {
-            android.util.Log.w("GameplayScreen", "Animation map size exceeded 100, clearing old animations")
+        // More aggressive cleanup: Keep only current grid items to prevent unbounded growth
+        if (itemAnimations.size > currentIds.size * 2) {
+            // Keep only animations for current items
+            val animationsToKeep = itemAnimations.filterKeys { it in currentIds }
             itemAnimations.clear()
+            itemAnimations.putAll(animationsToKeep)
         }
 
         revealedTargetId = null
     }
 
-    // Add animations for new items only, with size limit check
+    // Add animations for new items only with proper bounds checking
     gameState.grid.forEach { item ->
-        if (!itemAnimations.containsKey(item.id) && itemAnimations.size < 100) {
+        if (!itemAnimations.containsKey(item.id)) {
             itemAnimations[item.id] = Animatable(1f)
         }
     }

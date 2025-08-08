@@ -136,6 +136,9 @@ class SoundManager @Inject constructor(
     fun setSoundEnabled(enabled: Boolean) {
         soundEnabled = enabled
     }
+    
+    val isSoundEnabled: Boolean
+        get() = soundEnabled
 
     fun stopTimeoutSound() {
         currentTimeoutStreamId?.let { streamId ->
