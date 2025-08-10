@@ -2,7 +2,12 @@ package com.example.spottheshade.di
 
 import android.content.Context
 import com.example.spottheshade.data.repository.PreferencesManager
-import com.example.spottheshade.data.repository.SoundManager
+import com.example.spottheshade.data.repository.UserPreferencesRepository
+import com.example.spottheshade.services.SoundManager
+import com.example.spottheshade.game.GameLogicManager
+import com.example.spottheshade.monetization.MonetizationManager
+import com.example.spottheshade.monetization.MockMonetizationManager
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,7 +28,26 @@ object AppModule {
         return CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 
-    // Note: PreferencesManager, SoundManager, ErrorFeedbackManager, and NavigationHelper
-    // are now @Singleton classes with @Inject constructors, so Hilt will provide them automatically.
-    // No manual @Provides methods needed anymore.
+    @Provides
+    @Singleton
+    fun provideGameLogicManager(): GameLogicManager {
+        return GameLogicManager()
+    }
+
+    @Provides
+    @Singleton
+    fun provideMonetizationManager(): MonetizationManager {
+        return MockMonetizationManager()
+    }
+
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+    
+    @Binds
+    abstract fun bindUserPreferencesRepository(
+        preferencesManager: PreferencesManager
+    ): UserPreferencesRepository
 }

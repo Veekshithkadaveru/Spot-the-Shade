@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.example.spottheshade.data.repository.SoundManager
+import com.example.spottheshade.services.SoundManager
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 

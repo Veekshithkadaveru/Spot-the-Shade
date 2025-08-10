@@ -49,7 +49,7 @@ import com.example.spottheshade.ui.screens.components.StaggeredGrid
 import com.example.spottheshade.ui.screens.components.TopInfoPanel
 import com.example.spottheshade.ui.screens.components.calculateGridAndItemSize
 import com.example.spottheshade.ui.theme.LocalThemeColors
-import com.example.spottheshade.viewmodel.GameUiEvent
+import com.example.spottheshade.game.GameUiEvent
 import com.example.spottheshade.viewmodel.GameViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
