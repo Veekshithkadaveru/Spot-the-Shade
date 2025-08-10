@@ -8,7 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.spottheshade.data.model.UserPreferences
-import com.example.spottheshade.data.repository.SoundManager
+import com.example.spottheshade.services.SoundManager
 import com.example.spottheshade.navigation.GameNavGraph
 import com.example.spottheshade.ui.theme.SpotTheShadeTheme
 import com.example.spottheshade.viewmodel.GameViewModel

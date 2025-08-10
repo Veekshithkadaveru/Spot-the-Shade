@@ -40,7 +40,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.spottheshade.data.model.ShapeType
-import com.example.spottheshade.data.repository.HapticManager
+import com.example.spottheshade.services.HapticManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.cos

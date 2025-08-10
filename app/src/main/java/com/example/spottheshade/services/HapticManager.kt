@@ -1,4 +1,4 @@
-package com.example.spottheshade.data.repository
+package com.example.spottheshade.services
 
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType

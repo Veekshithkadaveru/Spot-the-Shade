@@ -1,4 +1,4 @@
-package com.example.spottheshade.data.repository
+package com.example.spottheshade.game
 
 import androidx.compose.ui.graphics.Color
 import com.example.spottheshade.data.model.GridItem

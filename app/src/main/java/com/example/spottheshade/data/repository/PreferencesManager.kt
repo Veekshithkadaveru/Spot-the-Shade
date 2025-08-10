@@ -9,11 +9,9 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.spottheshade.data.model.ThemeType
 import com.example.spottheshade.data.model.UserPreferences
-import com.example.spottheshade.data.repository.ErrorFeedbackManager
-import com.example.spottheshade.data.repository.UserError
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,7 +22,7 @@ private val Context.dataStore by preferencesDataStore(name = "user_preferences")
 class PreferencesManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val errorFeedbackManager: ErrorFeedbackManager
-) {
+) : UserPreferencesRepository {
     
     companion object {
         private val HIGH_SCORE_KEY = intPreferencesKey("high_score")
@@ -36,7 +34,7 @@ class PreferencesManager @Inject constructor(
         private val TOTAL_CORRECT_ANSWERS_KEY = intPreferencesKey("total_correct_answers")
     }
     
-    val userPreferences: Flow<UserPreferences> = context.dataStore.data
+    override val userPreferences: Flow<UserPreferences> = context.dataStore.data
         .map { preferences ->
             UserPreferences(
                 highScore = preferences[HIGH_SCORE_KEY] ?: 0,
@@ -65,7 +63,7 @@ class PreferencesManager @Inject constructor(
             )
         }
     
-    suspend fun updateHighScore(score: Int) {
+    override suspend fun updateHighScore(score: Int) {
         try {
             context.dataStore.edit { preferences ->
                 val currentHighScore = preferences[HIGH_SCORE_KEY] ?: 0
@@ -79,7 +77,7 @@ class PreferencesManager @Inject constructor(
         }
     }
     
-    suspend fun updateHighestLevel(level: Int) {
+    override suspend fun updateHighestLevel(level: Int) {
         try {
             context.dataStore.edit { preferences ->
                 val currentHighestLevel = preferences[HIGHEST_LEVEL_KEY] ?: 1
@@ -93,7 +91,7 @@ class PreferencesManager @Inject constructor(
         }
     }
     
-    suspend fun unlockTheme(theme: ThemeType) {
+    override suspend fun unlockTheme(theme: ThemeType) {
         try {
             context.dataStore.edit { preferences ->
                 val currentThemes = preferences[UNLOCKED_THEMES_KEY] ?: emptySet()
@@ -105,7 +103,7 @@ class PreferencesManager @Inject constructor(
         }
     }
     
-    suspend fun setCurrentTheme(theme: ThemeType) {
+    override suspend fun setCurrentTheme(theme: ThemeType) {
         try {
             context.dataStore.edit { preferences ->
                 preferences[CURRENT_THEME_KEY] = theme.name
@@ -116,7 +114,7 @@ class PreferencesManager @Inject constructor(
         }
     }
     
-    suspend fun setSoundEnabled(enabled: Boolean) {
+    override suspend fun setSoundEnabled(enabled: Boolean) {
         try {
             context.dataStore.edit { preferences ->
                 preferences[SOUND_ENABLED_KEY] = enabled
@@ -127,7 +125,7 @@ class PreferencesManager @Inject constructor(
         }
     }
     
-    suspend fun incrementGamesPlayed() {
+    override suspend fun incrementGamesPlayed() {
         try {
             context.dataStore.edit { preferences ->
                 val current = preferences[TOTAL_GAMES_PLAYED_KEY] ?: 0
@@ -139,7 +137,7 @@ class PreferencesManager @Inject constructor(
         }
     }
     
-    suspend fun incrementCorrectAnswers() {
+    override suspend fun incrementCorrectAnswers() {
         try {
             context.dataStore.edit { preferences ->
                 val current = preferences[TOTAL_CORRECT_ANSWERS_KEY] ?: 0

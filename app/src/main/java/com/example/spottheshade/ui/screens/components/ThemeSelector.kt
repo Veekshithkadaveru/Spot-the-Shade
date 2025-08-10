@@ -40,7 +40,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import com.example.spottheshade.data.model.ThemeType
 import com.example.spottheshade.data.model.UserPreferences
-import com.example.spottheshade.data.repository.HapticManager
+import com.example.spottheshade.services.HapticManager
 import com.example.spottheshade.ui.theme.*
 
 @Composable
