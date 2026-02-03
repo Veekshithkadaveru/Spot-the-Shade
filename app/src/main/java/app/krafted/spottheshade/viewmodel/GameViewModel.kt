@@ -38,6 +38,19 @@ class GameViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val gameStateManager = GameStateManager()
+
+    // Tap debouncing to prevent rapid tap race conditions
+    private var lastTapTime = 0L
+    private val tapDebounceMs = 200L
+
+    // Sealed class for atomic tap result handling
+    private sealed class TapResult {
+        object Inactive : TapResult()
+        object Debounced : TapResult()
+        object ItemNotFound : TapResult()
+        data class Correct(val item: app.krafted.spottheshade.data.model.GridItem, val state: app.krafted.spottheshade.data.model.GameState) : TapResult()
+        data class Incorrect(val item: app.krafted.spottheshade.data.model.GridItem) : TapResult()
+    }
     val gameState = gameStateManager.gameState
     val uiEvents = gameEventManager.uiEvents
     val userPreferences = preferencesManager.userPreferences
@@ -167,55 +180,71 @@ class GameViewModel @Inject constructor(
 
     fun onGridItemTapped(itemId: Int) {
         viewModelScope.launch {
-            val (shouldProcess, tappedItem) = gameStateManager.withCurrentState { currentState ->
-                if (!currentState.isGameActive) {
-                    false to null
-                } else {
-                    val item = gameLogicManager.findTappedItem(currentState.grid, itemId)
-                    true to item
-                }
-            }
-
-            if (!shouldProcess) return@launch
-
-            val wasActive = gameStateManager.withCurrentState { state ->
-                if (state.isGameActive) {
-                    timerManager.cancelTimer()
-                    true
-                } else {
-                    false
-                }
-            }
-
-            if (!wasActive) return@launch
-
-            gameStateManager.updateGameState { it.copy(isGameActive = false) }
-
-            if (tappedItem == null) {
-                gameStateManager.updateGameState { it.copy(isGameActive = true) }
-                timerManager.startTimer(gameLogicManager.getTimerDuration(gameState.value.level))
+            // Check debouncing first
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastTapTime < tapDebounceMs) {
                 return@launch
             }
+            lastTapTime = currentTime
 
-            if (tappedItem.isTarget) {
-                gameEventManager.stopTimeoutSound()
-                gameEventManager.emitEvent(GameUiEvent.CorrectTap(itemId))
-
-                val updatedState = gameStateManager.withCurrentState { currentState ->
-                    gameLogicManager.processCorrectAnswer(currentState)
+            // Single atomic operation to check state, find item, and determine result
+            val tapResult = gameStateManager.withCurrentState { state ->
+                if (!state.isGameActive) {
+                    return@withCurrentState TapResult.Inactive
                 }
 
-                preferencesManager.incrementCorrectAnswers()
-                preferencesManager.updateHighScore(updatedState.score)
-                preferencesManager.updateHighestLevel(updatedState.level)
+                val item = gameLogicManager.findTappedItem(state.grid, itemId)
+                    ?: return@withCurrentState TapResult.ItemNotFound
 
-                gameStateManager.updateGameState { updatedState }
-                delay(400)
-                nextLevel()
-            } else {
-                gameEventManager.emitEvent(GameUiEvent.IncorrectTap(itemId))
-                delay(500)
-                handleLifeLoss(GameResult.Wrong)
+                // Cancel timer inside the atomic block to prevent race
+                timerManager.cancelTimer()
+
+                if (item.isTarget) {
+                    TapResult.Correct(item, state)
+                } else {
+                    TapResult.Incorrect(item)
+                }
+            }
+
+            // Process result outside the lock
+            when (tapResult) {
+                is TapResult.Inactive, is TapResult.Debounced -> {
+                    // No action needed
+                    return@launch
+                }
+
+                is TapResult.ItemNotFound -> {
+                    // Item not found in grid - restart timer and continue
+                    timerManager.startTimer(gameLogicManager.getTimerDuration(gameState.value.level))
+                    return@launch
+                }
+
+                is TapResult.Correct -> {
+                    // Deactivate game while processing
+                    gameStateManager.updateGameState { it.copy(isGameActive = false) }
+
+                    gameEventManager.stopTimeoutSound()
+                    gameEventManager.emitEvent(GameUiEvent.CorrectTap(itemId))
+
+                    val updatedState = gameLogicManager.processCorrectAnswer(tapResult.state)
+
+                    preferencesManager.incrementCorrectAnswers()
+                    preferencesManager.updateHighScore(updatedState.score)
+                    preferencesManager.updateHighestLevel(updatedState.level)
+
+                    gameStateManager.updateGameState { updatedState }
+                    delay(400)
+                    nextLevel()
+                }
+
+                is TapResult.Incorrect -> {
+                    // Deactivate game while processing
+                    gameStateManager.updateGameState { it.copy(isGameActive = false) }
+
+                    gameEventManager.emitEvent(GameUiEvent.IncorrectTap(itemId))
+                    delay(500)
+                    handleLifeLoss(GameResult.Wrong)
+                }
             }
         }
     }
