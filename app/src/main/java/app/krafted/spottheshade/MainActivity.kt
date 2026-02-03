@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import app.krafted.spottheshade.data.model.UserPreferences
 import app.krafted.spottheshade.services.SoundManager
 import app.krafted.spottheshade.navigation.GameNavGraph
+import app.krafted.spottheshade.navigation.NavigationEventHandler
 import app.krafted.spottheshade.ui.theme.SpotTheShadeTheme
 import app.krafted.spottheshade.ui.util.ErrorEventHandler
 import app.krafted.spottheshade.viewmodel.GameViewModel
@@ -41,6 +42,9 @@ class MainActivity : ComponentActivity() {
 
                 // Handle error events from data layer as Toasts
                 ErrorEventHandler(viewModel)
+
+                // Handle navigation events from ViewModel
+                NavigationEventHandler(navController, viewModel)
 
                 GameNavGraph(navController = navController)
             }

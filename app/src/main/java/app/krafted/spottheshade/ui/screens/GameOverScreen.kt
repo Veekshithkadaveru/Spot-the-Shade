@@ -36,7 +36,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import app.krafted.spottheshade.data.model.GameResult
 import app.krafted.spottheshade.data.model.UserPreferences
-import app.krafted.spottheshade.navigation.Screen
 import app.krafted.spottheshade.ui.theme.LocalThemeColors
 import app.krafted.spottheshade.viewmodel.GameViewModel
 import androidx.compose.ui.graphics.Shadow
@@ -251,12 +250,7 @@ fun GameOverScreen(
 
             // Retry Button
             Button(
-                onClick = {
-                    viewModel.navigationHelper.safeNavigate(
-                        navController = navController,
-                        route = Screen.Gameplay.route
-                    )
-                },
+                onClick = { viewModel.navigateToGameplay() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -289,12 +283,7 @@ fun GameOverScreen(
 
             // Main Menu Button
             Button(
-                onClick = {
-                    viewModel.navigationHelper.safeNavigate(
-                        navController = navController,
-                        route = Screen.MainMenu.route
-                    )
-                },
+                onClick = { viewModel.navigateToMainMenu() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)

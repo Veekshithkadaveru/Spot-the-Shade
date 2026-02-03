@@ -14,10 +14,14 @@ import app.krafted.spottheshade.game.GameStateManager
 import app.krafted.spottheshade.game.GameUiEvent
 import app.krafted.spottheshade.game.ThemeManager
 import app.krafted.spottheshade.game.TimerManager
+import app.krafted.spottheshade.navigation.NavigationEvent
 import app.krafted.spottheshade.navigation.NavigationHelper
 import app.krafted.spottheshade.data.repository.ErrorFeedbackManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -40,6 +44,27 @@ class GameViewModel @Inject constructor(
     val uiEvents = gameEventManager.uiEvents
     val userPreferences = preferencesManager.userPreferences
     val errorEvents = errorFeedbackManager.errorEvents
+
+    // Navigation events - UI layer collects and performs actual navigation
+    private val _navigationEvents = MutableSharedFlow<NavigationEvent>(extraBufferCapacity = 1)
+    val navigationEvents: SharedFlow<NavigationEvent> = _navigationEvents.asSharedFlow()
+
+    // Navigation methods - emit events instead of directly navigating
+    fun navigateToGameplay() {
+        _navigationEvents.tryEmit(NavigationEvent.NavigateToGameplay)
+    }
+
+    fun navigateToMainMenu() {
+        _navigationEvents.tryEmit(NavigationEvent.NavigateToMainMenu)
+    }
+
+    fun navigateToGameOver(score: Int, level: Int) {
+        _navigationEvents.tryEmit(NavigationEvent.NavigateToGameOver(score, level))
+    }
+
+    fun navigateBack() {
+        _navigationEvents.tryEmit(NavigationEvent.PopBackStack)
+    }
 
     private lateinit var timerManager: TimerManager
 

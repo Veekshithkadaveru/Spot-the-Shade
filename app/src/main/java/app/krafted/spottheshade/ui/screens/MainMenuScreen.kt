@@ -46,7 +46,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import app.krafted.spottheshade.data.model.UserPreferences
-import app.krafted.spottheshade.navigation.Screen
 import app.krafted.spottheshade.ui.screens.components.ThemeSelector
 import app.krafted.spottheshade.ui.theme.DailyChallengeEnd
 import app.krafted.spottheshade.ui.theme.DailyChallengeStart
@@ -166,12 +165,7 @@ fun MainMenuScreen(
                 subText = "HIGH SCORE: ${if (userPreferences.highScore > 0) "${userPreferences.highScore}" else "0"}",
                 gradientColors = themeColors.buttonPrimary,
                 textColor = themeColors.textOnButton,
-                onClick = {
-                    viewModel.navigationHelper.safeNavigate(
-                        navController = navController,
-                        route = Screen.Gameplay.route
-                    )
-                },
+                onClick = { viewModel.navigateToGameplay() },
                 modifier = Modifier.padding(bottom = 24.dp),
                 contentDescription = "Start new game. Current high score: ${userPreferences.highScore}"
             )

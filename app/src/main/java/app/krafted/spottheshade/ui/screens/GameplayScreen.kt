@@ -42,7 +42,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import app.krafted.spottheshade.data.model.GameResult
 import app.krafted.spottheshade.data.model.UserPreferences
-import app.krafted.spottheshade.navigation.Screen
 import app.krafted.spottheshade.ui.screens.components.GameResultOverlay
 import app.krafted.spottheshade.ui.screens.components.GridItem
 import app.krafted.spottheshade.ui.screens.components.StaggeredGrid
@@ -198,12 +197,7 @@ fun GameplayScreen(
     LaunchedEffect(gameState.gameResult) {
         if (gameState.gameResult == GameResult.GameOver) {
             delay(500)
-            viewModel.navigationHelper.safeNavigate(
-                navController = navController,
-                route = Screen.GameOver.createRoute(gameState.score, gameState.level),
-                popUpTo = Screen.MainMenu.route,
-                inclusive = false
-            )
+            viewModel.navigateToGameOver(gameState.score, gameState.level)
         }
     }
 
@@ -323,6 +317,6 @@ fun GameplayScreen(
         onContinue = { viewModel.continueAfterLifeLoss() },
         onDeclineExtraTime = { viewModel.declineExtraTime() },
         onUseExtraTime = { viewModel.useExtraTime() },
-        onGoToMenu = { viewModel.navigationHelper.safePopBackStack(navController) }
+        onGoToMenu = { viewModel.navigateBack() }
     )
 }
