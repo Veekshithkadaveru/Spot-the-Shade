@@ -68,7 +68,6 @@ fun MainMenuScreen(
 ) {
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val themeColors = LocalThemeColors.current
-    val hapticManager = viewModel.getHapticManager()
     val context = LocalContext.current
 
     Box(
@@ -192,8 +191,7 @@ fun MainMenuScreen(
                 onUnlockTheme = { theme ->
                     viewModel.unlockThemeWithRewardedAd(theme)
                 },
-                modifier = Modifier.padding(bottom = 16.dp),
-                hapticManager = hapticManager
+                modifier = Modifier.padding(bottom = 16.dp)
             )
         }
     }

@@ -40,7 +40,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.krafted.spottheshade.data.model.ShapeType
-import app.krafted.spottheshade.services.HapticManager
 import app.krafted.spottheshade.ui.util.toComposeColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -88,8 +87,7 @@ fun GridItem(
     itemSize: Dp,
     scale: Float,
     onTapped: () -> Unit,
-    isRevealing: Boolean = false,
-    hapticManager: HapticManager? = null
+    isRevealing: Boolean = false
 ) {
     val coroutineScope = rememberCoroutineScope()
     val pressScale = remember { Animatable(1f) }
@@ -230,12 +228,7 @@ fun GridItem(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                     onClick = {
-
-                        if (hapticManager != null) {
-                            hapticManager.buttonPress(haptic)
-                        } else {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        }
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onTapped()
                         coroutineScope.launch {
                             pressScale.animateTo(0.8f, animationSpec = tween(100))

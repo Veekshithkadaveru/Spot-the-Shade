@@ -40,7 +40,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import app.krafted.spottheshade.data.model.ThemeType
 import app.krafted.spottheshade.data.model.UserPreferences
-import app.krafted.spottheshade.services.HapticManager
 import app.krafted.spottheshade.ui.theme.*
 
 @Composable
@@ -48,8 +47,7 @@ fun ThemeSelector(
     userPreferences: UserPreferences,
     onThemeSelected: (ThemeType) -> Unit,
     onUnlockTheme: (ThemeType) -> Unit,
-    modifier: Modifier = Modifier,
-    hapticManager: HapticManager? = null
+    modifier: Modifier = Modifier
 ) {
     val themeColors = LocalThemeColors.current
 
@@ -89,8 +87,7 @@ fun ThemeSelector(
                     isUnlocked = userPreferences.unlockedThemes.contains(theme),
                     isSelected = userPreferences.currentTheme == theme,
                     onThemeSelected = onThemeSelected,
-                    onUnlockTheme = onUnlockTheme,
-                    hapticManager = hapticManager
+                    onUnlockTheme = onUnlockTheme
                 )
             }
         }
@@ -104,8 +101,7 @@ fun ThemeCard(
     isSelected: Boolean,
     onThemeSelected: (ThemeType) -> Unit,
     onUnlockTheme: (ThemeType) -> Unit,
-    modifier: Modifier = Modifier,
-    hapticManager: HapticManager? = null
+    modifier: Modifier = Modifier
 ) {
     val themeColors = getThemeColors(theme)
     val borderColor = if (isSelected) Color.White else Color.Transparent
@@ -153,12 +149,7 @@ fun ThemeCard(
                 role = Role.Button
             }
             .clickable {
-
-                if (hapticManager != null) {
-                    hapticManager.themeSelect(haptic)
-                } else {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 if (isUnlocked) {
                     onThemeSelected(theme)
                 } else {

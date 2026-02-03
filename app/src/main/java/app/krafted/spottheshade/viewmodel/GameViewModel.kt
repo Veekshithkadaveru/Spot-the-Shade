@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import app.krafted.spottheshade.data.model.GameResult
 import app.krafted.spottheshade.data.model.ShapeType
 import app.krafted.spottheshade.data.model.ThemeType
-import app.krafted.spottheshade.services.HapticManager
 import app.krafted.spottheshade.data.repository.PreferencesManager
 import app.krafted.spottheshade.services.SoundManager
 import app.krafted.spottheshade.game.GameEventManager
@@ -31,7 +30,6 @@ import javax.inject.Inject
 class GameViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager,
     private val soundManager: SoundManager,
-    private val hapticManager: HapticManager,
     private val gameLogicManager: GameLogicManager,
     private val themeManager: ThemeManager,
     private val gameEventManager: GameEventManager,
@@ -352,8 +350,6 @@ class GameViewModel @Inject constructor(
             themeManager.unlockThemeWithRewardedAd(theme)
         }
     }
-
-    fun getHapticManager(): HapticManager = hapticManager
 
     override fun onCleared() {
         super.onCleared()
