@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.spottheshade"
+    namespace = "app.krafted.spottheshade"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.spottheshade"
+        applicationId = "app.krafted.spottheshade"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
