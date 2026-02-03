@@ -1,7 +1,7 @@
 package app.krafted.spottheshade.game
 
-import androidx.compose.ui.graphics.Color
 import app.krafted.spottheshade.data.model.GridItem
+import app.krafted.spottheshade.data.model.HSLColor
 import app.krafted.spottheshade.data.model.ShapeType
 import app.krafted.spottheshade.data.model.Difficulty
 import kotlin.math.max
@@ -112,8 +112,8 @@ class GridGenerator {
 
         val diff = calculateColorDifference(level)
 
-        val baseColor = Color.hsl(hue, saturation, baseLight)
-        val targetColor = Color.hsl(hue, saturation, baseLight - diff)
+        val baseColor = HSLColor.fromComponents(hue, saturation, baseLight)
+        val targetColor = HSLColor.fromComponents(hue, saturation, baseLight - diff)
 
         val targetPosition = Random.nextInt(total)
 

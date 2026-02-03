@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.krafted.spottheshade.data.model.ShapeType
 import app.krafted.spottheshade.services.HapticManager
+import app.krafted.spottheshade.ui.util.toComposeColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.cos
@@ -273,7 +274,7 @@ fun GridItem(
 
             // Main shape content
             Canvas(modifier = Modifier.fillMaxSize()) {
-                drawShape(item.shape, item.color, size.minDimension)
+                drawShape(item.shape, item.color.toComposeColor(), size.minDimension)
             }
         }
     }

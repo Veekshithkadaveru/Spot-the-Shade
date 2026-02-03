@@ -1,10 +1,8 @@
 package app.krafted.spottheshade.data.model
 
-import androidx.compose.ui.graphics.Color
-
 data class GridItem(
     val id: Int,
-    val color: Color,
+    val color: HSLColor,
     val isTarget: Boolean,
     val shape: ShapeType
 )
