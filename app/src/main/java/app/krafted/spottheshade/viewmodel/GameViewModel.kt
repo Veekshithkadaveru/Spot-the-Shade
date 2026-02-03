@@ -15,6 +15,7 @@ import app.krafted.spottheshade.game.GameUiEvent
 import app.krafted.spottheshade.game.ThemeManager
 import app.krafted.spottheshade.game.TimerManager
 import app.krafted.spottheshade.navigation.NavigationHelper
+import app.krafted.spottheshade.data.repository.ErrorFeedbackManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -30,6 +31,7 @@ class GameViewModel @Inject constructor(
     private val gameLogicManager: GameLogicManager,
     private val themeManager: ThemeManager,
     private val gameEventManager: GameEventManager,
+    private val errorFeedbackManager: ErrorFeedbackManager,
     val navigationHelper: NavigationHelper
 ) : ViewModel() {
 
@@ -37,6 +39,7 @@ class GameViewModel @Inject constructor(
     val gameState = gameStateManager.gameState
     val uiEvents = gameEventManager.uiEvents
     val userPreferences = preferencesManager.userPreferences
+    val errorEvents = errorFeedbackManager.errorEvents
 
     private lateinit var timerManager: TimerManager
 

@@ -44,7 +44,7 @@ class PreferencesManager @Inject constructor(
                         ThemeType.valueOf(it)
                     } catch (e: IllegalArgumentException) {
                         android.util.Log.w("PreferencesManager", "Invalid theme name found: $it", e)
-                        errorFeedbackManager.showError(UserError.ThemeCorrupted)
+                        errorFeedbackManager.emitError(UserError.ThemeCorrupted)
                         null
                     }
                 }?.toSet() ?: setOf(ThemeType.DEFAULT),
@@ -53,7 +53,7 @@ class PreferencesManager @Inject constructor(
                         ThemeType.valueOf(it)
                     } catch (e: IllegalArgumentException) {
                         android.util.Log.w("PreferencesManager", "Invalid current theme found: $it", e)
-                        errorFeedbackManager.showError(UserError.ThemeCorrupted)
+                        errorFeedbackManager.emitError(UserError.ThemeCorrupted)
                         tryFallbackTheme()
                     }
                 } ?: ThemeType.DEFAULT,
@@ -73,7 +73,7 @@ class PreferencesManager @Inject constructor(
             }
         } catch (e: Exception) {
             android.util.Log.e("PreferencesManager", "Failed to update high score", e)
-            errorFeedbackManager.showError(UserError.PreferencesSaveFailed)
+            errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
 
@@ -87,7 +87,7 @@ class PreferencesManager @Inject constructor(
             }
         } catch (e: Exception) {
             android.util.Log.e("PreferencesManager", "Failed to update highest level", e)
-            errorFeedbackManager.showError(UserError.PreferencesSaveFailed)
+            errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
 
@@ -99,7 +99,7 @@ class PreferencesManager @Inject constructor(
             }
         } catch (e: Exception) {
             android.util.Log.e("PreferencesManager", "Failed to unlock theme: $theme", e)
-            errorFeedbackManager.showError(UserError.PreferencesSaveFailed)
+            errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
 
@@ -110,7 +110,7 @@ class PreferencesManager @Inject constructor(
             }
         } catch (e: Exception) {
             android.util.Log.e("PreferencesManager", "Failed to set current theme: $theme", e)
-            errorFeedbackManager.showError(UserError.ThemeLoadFailed)
+            errorFeedbackManager.emitError(UserError.ThemeLoadFailed)
         }
     }
 
@@ -121,7 +121,7 @@ class PreferencesManager @Inject constructor(
             }
         } catch (e: Exception) {
             android.util.Log.e("PreferencesManager", "Failed to set sound enabled: $enabled", e)
-            errorFeedbackManager.showError(UserError.PreferencesSaveFailed)
+            errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
 
@@ -156,7 +156,7 @@ class PreferencesManager @Inject constructor(
             }
         } catch (e: Exception) {
             android.util.Log.e("PreferencesManager", "Failed to reset all data", e)
-            errorFeedbackManager.showError(UserError.PreferencesSaveFailed)
+            errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
 

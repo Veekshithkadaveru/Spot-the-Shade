@@ -31,7 +31,7 @@ class NavigationHelper @Inject constructor(
             }
         } catch (e: Exception) {
             android.util.Log.e("NavigationHelper", "Navigation failed from current to $route", e)
-            errorFeedbackManager.showError(UserError.NavigationFailed)
+            errorFeedbackManager.emitError(UserError.NavigationFailed)
 
             // Try fallback navigation
             try {
@@ -63,7 +63,7 @@ class NavigationHelper @Inject constructor(
             }
         } catch (e: Exception) {
             android.util.Log.e("NavigationHelper", "Pop back stack failed", e)
-            errorFeedbackManager.showError(UserError.NavigationFailed)
+            errorFeedbackManager.emitError(UserError.NavigationFailed)
 
             // Try to navigate to main menu as last resort
             try {

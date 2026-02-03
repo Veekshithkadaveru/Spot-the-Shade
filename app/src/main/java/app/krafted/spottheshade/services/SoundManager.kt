@@ -79,7 +79,7 @@ class SoundManager @Inject constructor(
                     if (attempt == maxRetries - 1) {
                         // Final attempt failed - show user feedback and enable silent mode
                         android.util.Log.e("SoundManager", "All sound loading attempts failed", e)
-                        errorFeedbackManager.showError(UserError.SoundLoadFailed)
+                        errorFeedbackManager.emitError(UserError.SoundLoadFailed)
                         setSoundEnabled(false)
                     } else {
                         // Wait with exponential backoff before retry
@@ -111,7 +111,7 @@ class SoundManager @Inject constructor(
                 // Continue silently - sound failure shouldn't crash game
                 // Only show error for critical sounds or repeated failures
                 if (soundType == SoundType.GAME_OVER) {
-                    errorFeedbackManager.showError(UserError.SoundPlaybackFailed)
+                    errorFeedbackManager.emitError(UserError.SoundPlaybackFailed)
                 }
             }
         }

@@ -11,6 +11,7 @@ import app.krafted.spottheshade.data.model.UserPreferences
 import app.krafted.spottheshade.services.SoundManager
 import app.krafted.spottheshade.navigation.GameNavGraph
 import app.krafted.spottheshade.ui.theme.SpotTheShadeTheme
+import app.krafted.spottheshade.ui.util.ErrorEventHandler
 import app.krafted.spottheshade.viewmodel.GameViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -37,6 +38,10 @@ class MainActivity : ComponentActivity() {
 
             SpotTheShadeTheme(themeType = userPreferences.currentTheme) {
                 val navController = rememberNavController()
+
+                // Handle error events from data layer as Toasts
+                ErrorEventHandler(viewModel)
+
                 GameNavGraph(navController = navController)
             }
         }

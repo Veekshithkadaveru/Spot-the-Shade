@@ -1,18 +1,23 @@
 package app.krafted.spottheshade.data.repository
 
-import android.content.Context
-import android.widget.Toast
-import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Manages error events in a framework-agnostic way.
+ * Emits errors via Flow - UI layer handles display (Toast, Snackbar, etc.)
+ */
 @Singleton
-class ErrorFeedbackManager @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class ErrorFeedbackManager @Inject constructor() {
 
-    fun showError(error: UserError) {
-        Toast.makeText(context, error.message, Toast.LENGTH_SHORT).show()
+    private val _errorEvents = MutableSharedFlow<UserError>(extraBufferCapacity = 1)
+    val errorEvents: SharedFlow<UserError> = _errorEvents.asSharedFlow()
+
+    fun emitError(error: UserError) {
+        _errorEvents.tryEmit(error)
     }
 }
 
