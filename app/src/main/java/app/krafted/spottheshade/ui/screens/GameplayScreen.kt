@@ -313,8 +313,6 @@ fun GameplayScreen(
                                         itemSize = itemSize,
                                         scale = scale,
                                         isRevealing = revealedTargetId == item.id,
-                                        index = index,
-                                        columns = columns,
                                         onTapped = {
                                             if (gameState.isGameActive) {
                                                 viewModel.onGridItemTapped(item.id)

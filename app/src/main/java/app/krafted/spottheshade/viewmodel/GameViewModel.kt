@@ -368,7 +368,7 @@ class GameViewModel @Inject constructor(
                 soundManager.setSoundEnabled(newSoundState)
             } catch (e: Exception) {
                 android.util.Log.w("GameViewModel", "Failed to toggle sound preferences", e)
-                soundManager.setSoundEnabled(!soundManager.isSoundEnabled())
+                soundManager.setSoundEnabled(!soundManager.isSoundEnabled)
             }
         }
     }
