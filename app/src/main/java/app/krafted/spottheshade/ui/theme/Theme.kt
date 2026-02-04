@@ -231,6 +231,31 @@ fun getThemeColors(themeType: ThemeType): ThemeColors {
             iconColor = Color.White,
             overlayColor = VolcanicDark.copy(alpha = 0.5f)
         )
+        ThemeType.ROYAL_GOLD -> ThemeColors(
+            primary = RoyalPurple,
+            secondary = RoyalVelvet,
+            accent = RoyalGold,
+            background = RoyalDark,
+            surface = RoyalPurple,
+            onSurface = RoyalGold,
+            // Royal gradient - from deep purple void to shining gold
+            gradientColors = listOf(
+                RoyalDark,
+                RoyalPurple,
+                RoyalVelvet,
+                RoyalGoldDark,
+                RoyalGold,
+                RoyalBright,
+                RoyalShine
+            ),
+            surfaceGradient = listOf(RoyalPurple, RoyalVelvet),
+            titleColor = RoyalGold,
+            buttonPrimary = listOf(RoyalPurple, RoyalGoldDark),
+            buttonSecondary = listOf(RoyalVelvet, RoyalGold),
+            textOnButton = RoyalGold,
+            iconColor = RoyalGold,
+            overlayColor = RoyalDark.copy(alpha = 0.8f)
+        )
     }
 }
 

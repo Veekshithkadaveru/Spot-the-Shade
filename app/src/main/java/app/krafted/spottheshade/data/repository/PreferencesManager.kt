@@ -36,27 +36,41 @@ class PreferencesManager @Inject constructor(
 
     override val userPreferences: Flow<UserPreferences> = context.dataStore.data
         .map { preferences ->
+
+            val unlockedThemes = (preferences[UNLOCKED_THEMES_KEY]?.mapNotNull {
+                try {
+                    ThemeType.valueOf(it)
+                } catch (e: IllegalArgumentException) {
+                    android.util.Log.w("PreferencesManager", "Invalid theme name found: $it", e)
+                    errorFeedbackManager.emitError(UserError.ThemeCorrupted)
+                    null
+                }
+            }?.toSet() ?: emptySet()) + ThemeType.DEFAULT
+
+            // Parse current theme
+            val rawCurrentTheme = preferences[CURRENT_THEME_KEY]?.let {
+                try {
+                    ThemeType.valueOf(it)
+                } catch (e: IllegalArgumentException) {
+                    android.util.Log.w("PreferencesManager", "Invalid current theme found: $it", e)
+                    errorFeedbackManager.emitError(UserError.ThemeCorrupted)
+                    tryFallbackTheme()
+                }
+            } ?: ThemeType.DEFAULT
+
+            // SECURITY: Validate currentTheme is actually unlocked
+            val validatedCurrentTheme = if (unlockedThemes.contains(rawCurrentTheme)) {
+                rawCurrentTheme
+            } else {
+                android.util.Log.w("PreferencesManager", "Current theme $rawCurrentTheme not in unlocked themes, resetting to DEFAULT")
+                ThemeType.DEFAULT
+            }
+
             UserPreferences(
                 highScore = preferences[HIGH_SCORE_KEY] ?: 0,
                 highestLevel = preferences[HIGHEST_LEVEL_KEY] ?: 1,
-                unlockedThemes = preferences[UNLOCKED_THEMES_KEY]?.mapNotNull {
-                    try {
-                        ThemeType.valueOf(it)
-                    } catch (e: IllegalArgumentException) {
-                        android.util.Log.w("PreferencesManager", "Invalid theme name found: $it", e)
-                        errorFeedbackManager.emitError(UserError.ThemeCorrupted)
-                        null
-                    }
-                }?.toSet() ?: setOf(ThemeType.DEFAULT),
-                currentTheme = preferences[CURRENT_THEME_KEY]?.let {
-                    try {
-                        ThemeType.valueOf(it)
-                    } catch (e: IllegalArgumentException) {
-                        android.util.Log.w("PreferencesManager", "Invalid current theme found: $it", e)
-                        errorFeedbackManager.emitError(UserError.ThemeCorrupted)
-                        tryFallbackTheme()
-                    }
-                } ?: ThemeType.DEFAULT,
+                unlockedThemes = unlockedThemes,
+                currentTheme = validatedCurrentTheme,
                 soundEnabled = preferences[SOUND_ENABLED_KEY] ?: true,
                 totalGamesPlayed = preferences[TOTAL_GAMES_PLAYED_KEY] ?: 0,
                 totalCorrectAnswers = preferences[TOTAL_CORRECT_ANSWERS_KEY] ?: 0

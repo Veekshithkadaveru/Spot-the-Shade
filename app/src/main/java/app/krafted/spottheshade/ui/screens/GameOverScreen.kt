@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import app.krafted.spottheshade.data.model.GameResult
 import app.krafted.spottheshade.data.model.UserPreferences
 import app.krafted.spottheshade.ui.navigation.Screen
+import app.krafted.spottheshade.ui.screens.components.ThemeUnlockedCelebration
 import app.krafted.spottheshade.ui.theme.LocalThemeColors
 import app.krafted.spottheshade.viewmodel.GameViewModel
 import androidx.compose.ui.graphics.Shadow
@@ -54,7 +55,22 @@ fun GameOverScreen(
 ) {
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val gameState by viewModel.gameState.collectAsState()
+    val newlyUnlockedThemes by viewModel.newlyUnlockedThemes.collectAsState()
     val themeColors = LocalThemeColors.current
+
+    // Show theme unlock celebration dialog if there are newly unlocked themes
+    if (newlyUnlockedThemes.isNotEmpty()) {
+        ThemeUnlockedCelebration(
+            unlockedThemes = newlyUnlockedThemes,
+            onUseTheme = { theme ->
+                viewModel.setCurrentTheme(theme)
+                viewModel.clearNewlyUnlockedThemes()
+            },
+            onContinue = {
+                viewModel.clearNewlyUnlockedThemes()
+            }
+        )
+    }
 
     // Determine the game over message based on how the game ended
     val gameOverMessage = when (gameState.lastEndingReason) {

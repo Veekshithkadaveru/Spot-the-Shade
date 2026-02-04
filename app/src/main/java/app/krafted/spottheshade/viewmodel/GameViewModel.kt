@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import app.krafted.spottheshade.data.model.GameResult
 import app.krafted.spottheshade.data.model.ShapeType
 import app.krafted.spottheshade.data.model.ThemeType
+import app.krafted.spottheshade.data.repository.ErrorFeedbackManager
 import app.krafted.spottheshade.data.repository.UserPreferencesRepository
-import app.krafted.spottheshade.services.SoundManager
 import app.krafted.spottheshade.game.GameEventManager
 import app.krafted.spottheshade.game.GameLogicManager
 import app.krafted.spottheshade.game.GameStateManager
@@ -14,9 +14,12 @@ import app.krafted.spottheshade.game.GameUiEvent
 import app.krafted.spottheshade.game.ThemeManager
 import app.krafted.spottheshade.game.TimerEvent
 import app.krafted.spottheshade.game.TimerManager
-import app.krafted.spottheshade.data.repository.ErrorFeedbackManager
+import app.krafted.spottheshade.services.SoundManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicLong
@@ -43,19 +46,32 @@ class GameViewModel @Inject constructor(
     private sealed class TapResult {
         object Inactive : TapResult()
         object ItemNotFound : TapResult()
-        data class Correct(val item: app.krafted.spottheshade.data.model.GridItem, val state: app.krafted.spottheshade.data.model.GameState) : TapResult()
+        data class Correct(
+            val item: app.krafted.spottheshade.data.model.GridItem,
+            val state: app.krafted.spottheshade.data.model.GameState
+        ) : TapResult()
+
         data class Incorrect(val item: app.krafted.spottheshade.data.model.GridItem) : TapResult()
     }
+
     val gameState = gameStateManager.gameState
     val uiEvents = gameEventManager.uiEvents
     val userPreferences = userPreferencesRepository.userPreferences
     val errorEvents = errorFeedbackManager.errorEvents
+
+    // State for newly unlocked themes (shown as celebration on game over)
+    private val _newlyUnlockedThemes = MutableStateFlow<List<ThemeType>>(emptyList())
+    val newlyUnlockedThemes: StateFlow<List<ThemeType>> = _newlyUnlockedThemes.asStateFlow()
 
     private lateinit var timerManager: TimerManager
 
     init {
         initializeTimerManager()
         initializeSoundPreferences()
+        // Initial unlock check
+        viewModelScope.launch {
+            themeManager.unlockTheme(ThemeType.ROYAL_GOLD)
+        }
     }
 
     private fun initializeTimerManager() {
@@ -73,16 +89,20 @@ class GameViewModel @Inject constructor(
                                 }
                             }
                         }
+
                         TimerEvent.Warning -> {
                             soundManager.playTimeoutSound()
                             gameEventManager.emitEvent(GameUiEvent.TimeWarning)
                         }
+
                         TimerEvent.Critical -> {
                             gameEventManager.emitEvent(GameUiEvent.TimeCritical)
                         }
+
                         TimerEvent.Urgent -> {
                             gameEventManager.emitEvent(GameUiEvent.TimeUrgent)
                         }
+
                         TimerEvent.Timeout -> {
                             var shouldHandle = false
                             gameStateManager.updateGameState { state ->
@@ -312,7 +332,12 @@ class GameViewModel @Inject constructor(
 
             userPreferencesRepository.updateHighScore(currentScore)
             userPreferencesRepository.updateHighestLevel(currentLevel)
-            themeManager.checkThemeUnlockMilestones()
+
+            // Check for newly unlocked themes and store them for celebration display
+            val unlockedThemes = themeManager.checkThemeUnlockMilestones()
+            if (unlockedThemes.isNotEmpty()) {
+                _newlyUnlockedThemes.value = unlockedThemes
+            }
 
             targetId?.let {
                 gameEventManager.emitEvent(GameUiEvent.RevealAnswer(it))
@@ -383,6 +408,13 @@ class GameViewModel @Inject constructor(
         viewModelScope.launch {
             themeManager.unlockThemeWithRewardedAd(theme)
         }
+    }
+
+    /**
+     * Clears the newly unlocked themes after they've been shown in the celebration dialog.
+     */
+    fun clearNewlyUnlockedThemes() {
+        _newlyUnlockedThemes.value = emptyList()
     }
 
     override fun onCleared() {
