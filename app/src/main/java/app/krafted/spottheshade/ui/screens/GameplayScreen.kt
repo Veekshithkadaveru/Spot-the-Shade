@@ -39,10 +39,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import app.krafted.spottheshade.data.model.GameResult
 import app.krafted.spottheshade.data.model.UserPreferences
+import app.krafted.spottheshade.ui.navigation.Screen
 import app.krafted.spottheshade.ui.screens.components.GameResultOverlay
 import app.krafted.spottheshade.ui.screens.components.GridItem
 import app.krafted.spottheshade.ui.screens.components.StaggeredGrid
@@ -59,7 +59,7 @@ import kotlin.math.sqrt
 @Composable
 fun GameplayScreen(
     navController: NavHostController,
-    viewModel: GameViewModel = hiltViewModel()
+    viewModel: GameViewModel
 ) {
     val gameState by viewModel.gameState.collectAsState()
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
@@ -102,7 +102,7 @@ fun GameplayScreen(
         viewModel.startGame()
     }
 
-    // Listen for UI events from the ViewModel
+    // Listen for UI events from the ViewModel (animations + haptics)
     LaunchedEffect(key1 = viewModel.uiEvents) {
         viewModel.uiEvents.collectLatest { event ->
             when (event) {
@@ -113,27 +113,23 @@ fun GameplayScreen(
                             animatable.animateTo(1f, spring())
                         }
                     }
-                }
-
-                is GameUiEvent.LevelUp -> {
-                    // Celebratory haptic feedback for level progression
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 }
 
+                is GameUiEvent.LevelUp -> {
+                }
+
                 is GameUiEvent.IncorrectTap -> {
-                    // Strong haptic feedback for wrong answers
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     itemAnimations[event.itemId]?.let { animatable ->
                         coroutineScope.launch {
                             animatable.animateTo(0.8f, tween(100))
                             animatable.animateTo(1f, spring())
                         }
                     }
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 }
 
                 is GameUiEvent.ShakeGrid -> {
-                    // Additional haptic feedback during grid shake
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     coroutineScope.launch {
                         gridShakeAnimation.animateTo(15f, tween(50))
                         gridShakeAnimation.animateTo(-15f, tween(50))
@@ -142,38 +138,36 @@ fun GameplayScreen(
                         gridShakeAnimation.animateTo(5f, tween(50))
                         gridShakeAnimation.animateTo(0f, spring())
                     }
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 }
 
                 is GameUiEvent.Timeout -> {
-                    // Double haptic pulse for timeout
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     coroutineScope.launch {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         delay(100)
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
                 }
 
                 is GameUiEvent.GameOver -> {
-                    // Strong final haptic feedback for game over
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 }
 
                 is GameUiEvent.TimeWarning -> {
-                    // Light warning pulse at 5 seconds
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 }
 
                 is GameUiEvent.TimeCritical -> {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     coroutineScope.launch {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         delay(150)
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
                 }
 
                 is GameUiEvent.TimeUrgent -> {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     coroutineScope.launch {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         delay(100)
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         delay(100)
@@ -183,14 +177,6 @@ fun GameplayScreen(
 
                 is GameUiEvent.RevealAnswer -> {
                     revealedTargetId = event.targetId
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    coroutineScope.launch {
-                        delay(300)
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        delay(200)
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    }
-
                     coroutineScope.launch {
                         delay(200)
                         // Animate other items to fade slightly for focus
@@ -204,6 +190,13 @@ fun GameplayScreen(
                             }
                         }
                     }
+                    coroutineScope.launch {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        delay(300)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        delay(200)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
                 }
             }
         }
@@ -213,7 +206,16 @@ fun GameplayScreen(
     LaunchedEffect(gameState.gameResult) {
         if (gameState.gameResult == GameResult.GameOver) {
             delay(500)
-            viewModel.navigateToGameOver(gameState.score, gameState.level)
+            navController.navigate(
+                Screen.GameOver.createRoute(
+                    gameState.score,
+                    gameState.level
+                )
+            ) {
+                popUpTo(Screen.MainMenu.route) {
+                    inclusive = false
+                }
+            }
         }
     }
 
@@ -304,13 +306,15 @@ fun GameplayScreen(
                         ) {
                             // Grid content
                             StaggeredGrid(columns = columns) {
-                                currentGrid.forEach { item ->
+                                currentGrid.forEachIndexed { index, item ->
                                     val scale = itemAnimations[item.id]?.value ?: 1f
                                     GridItem(
                                         item = item,
                                         itemSize = itemSize,
                                         scale = scale,
                                         isRevealing = revealedTargetId == item.id,
+                                        index = index,
+                                        columns = columns,
                                         onTapped = {
                                             if (gameState.isGameActive) {
                                                 viewModel.onGridItemTapped(item.id)
@@ -332,6 +336,12 @@ fun GameplayScreen(
         onContinue = { viewModel.continueAfterLifeLoss() },
         onDeclineExtraTime = { viewModel.declineExtraTime() },
         onUseExtraTime = { viewModel.useExtraTime() },
-        onGoToMenu = { viewModel.navigateBack() }
+        onGoToMenu = {
+            navController.navigate(Screen.MainMenu.route) {
+                popUpTo(Screen.MainMenu.route) {
+                    inclusive = false
+                }
+            }
+        }
     )
 }

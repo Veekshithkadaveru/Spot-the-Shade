@@ -123,7 +123,7 @@ fun GameResultOverlay(
 
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = null,
+                                contentDescription = "Wrong shade",
                                 tint = Color(0xFFFF4757),
                                 modifier = Modifier
                                     .size(64.dp)
@@ -157,7 +157,7 @@ fun GameResultOverlay(
                         GameResult.Timeout -> {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = null,
+                                contentDescription = "Time's up",
                                 tint = Color(0xFFFFD700),
                                 modifier = Modifier.size(64.dp)
                             )
@@ -186,7 +186,7 @@ fun GameResultOverlay(
                         GameResult.OfferContinue -> {
                             Icon(
                                 imageVector = Icons.Default.Star,
-                                contentDescription = null,
+                                contentDescription = "Continue available",
                                 tint = Color(0xFF4ECDC4),
                                 modifier = Modifier.size(64.dp)
                             )
@@ -229,7 +229,6 @@ fun GameResultOverlay(
                         }
 
                         GameResult.Timeout -> {
-                            // TODO: REWARDED AD INTEGRATION - Extra Time Button
                             // This button should trigger rewarded ad flow:
                             // 1. Show loading state while ad loads ("Loading Ad...")
                             // 2. Disable button if ad fails to load

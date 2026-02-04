@@ -5,77 +5,51 @@ import androidx.lifecycle.viewModelScope
 import app.krafted.spottheshade.data.model.GameResult
 import app.krafted.spottheshade.data.model.ShapeType
 import app.krafted.spottheshade.data.model.ThemeType
-import app.krafted.spottheshade.data.repository.PreferencesManager
+import app.krafted.spottheshade.data.repository.UserPreferencesRepository
 import app.krafted.spottheshade.services.SoundManager
 import app.krafted.spottheshade.game.GameEventManager
 import app.krafted.spottheshade.game.GameLogicManager
 import app.krafted.spottheshade.game.GameStateManager
 import app.krafted.spottheshade.game.GameUiEvent
 import app.krafted.spottheshade.game.ThemeManager
+import app.krafted.spottheshade.game.TimerEvent
 import app.krafted.spottheshade.game.TimerManager
-import app.krafted.spottheshade.navigation.NavigationEvent
-import app.krafted.spottheshade.navigation.NavigationHelper
 import app.krafted.spottheshade.data.repository.ErrorFeedbackManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 
 
 @HiltViewModel
 class GameViewModel @Inject constructor(
-    private val preferencesManager: PreferencesManager,
+    private val userPreferencesRepository: UserPreferencesRepository,
     private val soundManager: SoundManager,
     private val gameLogicManager: GameLogicManager,
     private val themeManager: ThemeManager,
     private val gameEventManager: GameEventManager,
-    private val errorFeedbackManager: ErrorFeedbackManager,
-    val navigationHelper: NavigationHelper
+    private val errorFeedbackManager: ErrorFeedbackManager
 ) : ViewModel() {
 
     private val gameStateManager = GameStateManager()
 
-    // Tap debouncing to prevent rapid tap race conditions
-    private var lastTapTime = 0L
+    // Tap debouncing to prevent rapid tap race conditions (thread-safe)
+    private val lastTapTime = AtomicLong(0L)
     private val tapDebounceMs = 200L
 
     // Sealed class for atomic tap result handling
     private sealed class TapResult {
         object Inactive : TapResult()
-        object Debounced : TapResult()
         object ItemNotFound : TapResult()
         data class Correct(val item: app.krafted.spottheshade.data.model.GridItem, val state: app.krafted.spottheshade.data.model.GameState) : TapResult()
         data class Incorrect(val item: app.krafted.spottheshade.data.model.GridItem) : TapResult()
     }
     val gameState = gameStateManager.gameState
     val uiEvents = gameEventManager.uiEvents
-    val userPreferences = preferencesManager.userPreferences
+    val userPreferences = userPreferencesRepository.userPreferences
     val errorEvents = errorFeedbackManager.errorEvents
-
-    // Navigation events - UI layer collects and performs actual navigation
-    private val _navigationEvents = MutableSharedFlow<NavigationEvent>(extraBufferCapacity = 1)
-    val navigationEvents: SharedFlow<NavigationEvent> = _navigationEvents.asSharedFlow()
-
-    // Navigation methods - emit events instead of directly navigating
-    fun navigateToGameplay() {
-        _navigationEvents.tryEmit(NavigationEvent.NavigateToGameplay)
-    }
-
-    fun navigateToMainMenu() {
-        _navigationEvents.tryEmit(NavigationEvent.NavigateToMainMenu)
-    }
-
-    fun navigateToGameOver(score: Int, level: Int) {
-        _navigationEvents.tryEmit(NavigationEvent.NavigateToGameOver(score, level))
-    }
-
-    fun navigateBack() {
-        _navigationEvents.tryEmit(NavigationEvent.PopBackStack)
-    }
 
     private lateinit var timerManager: TimerManager
 
@@ -87,28 +61,42 @@ class GameViewModel @Inject constructor(
     private fun initializeTimerManager() {
         timerManager = TimerManager(
             scope = viewModelScope,
-            onTimeUpdate = { timeLeft ->
+            onEvent = { event ->
                 viewModelScope.launch {
-                    gameStateManager.updateGameState { state ->
-                        if (state.isGameActive) state.copy(timeRemaining = timeLeft) else state
-                    }
-                }
-            },
-            onTimeWarning = {
-                viewModelScope.launch { gameEventManager.emitEvent(GameUiEvent.TimeWarning) }
-            },
-            onTimeCritical = {
-                viewModelScope.launch { gameEventManager.emitEvent(GameUiEvent.TimeCritical) }
-            },
-            onTimeUrgent = {
-                viewModelScope.launch { gameEventManager.emitEvent(GameUiEvent.TimeUrgent) }
-            },
-            onTimeout = {
-                viewModelScope.launch {
-                    val shouldHandle = gameStateManager.withCurrentState { it.isGameActive }
-                    if (shouldHandle) {
-                        gameEventManager.emitEvent(GameUiEvent.Timeout)
-                        handleLifeLoss(GameResult.Timeout)
+                    when (event) {
+                        is TimerEvent.Tick -> {
+                            gameStateManager.updateGameState { state ->
+                                if (state.isGameActive) {
+                                    state.copy(timeRemaining = event.secondsLeft)
+                                } else {
+                                    state
+                                }
+                            }
+                        }
+                        TimerEvent.Warning -> {
+                            soundManager.playTimeoutSound()
+                            gameEventManager.emitEvent(GameUiEvent.TimeWarning)
+                        }
+                        TimerEvent.Critical -> {
+                            gameEventManager.emitEvent(GameUiEvent.TimeCritical)
+                        }
+                        TimerEvent.Urgent -> {
+                            gameEventManager.emitEvent(GameUiEvent.TimeUrgent)
+                        }
+                        TimerEvent.Timeout -> {
+                            var shouldHandle = false
+                            gameStateManager.updateGameState { state ->
+                                if (!state.isGameActive) {
+                                    return@updateGameState state
+                                }
+                                shouldHandle = true
+                                state.copy(isGameActive = false)
+                            }
+                            if (shouldHandle) {
+                                gameEventManager.emitEvent(GameUiEvent.Timeout)
+                                handleLifeLoss(GameResult.Timeout)
+                            }
+                        }
                     }
                 }
             }
@@ -118,7 +106,7 @@ class GameViewModel @Inject constructor(
     private fun initializeSoundPreferences() {
         viewModelScope.launch {
             try {
-                val prefs = preferencesManager.userPreferences.first()
+                val prefs = userPreferencesRepository.userPreferences.first()
                 soundManager.setSoundEnabled(prefs.soundEnabled)
             } catch (e: Exception) {
                 android.util.Log.w("GameViewModel", "Failed to initialize sound preferences", e)
@@ -131,7 +119,7 @@ class GameViewModel @Inject constructor(
     fun startGame() {
         viewModelScope.launch {
             timerManager.cancelTimer()
-            preferencesManager.incrementGamesPlayed()
+            userPreferencesRepository.incrementGamesPlayed()
 
             val grid = gameLogicManager.generateGrid(level = 1)
             val currentShape = grid.firstOrNull()?.shape ?: ShapeType.CIRCLE
@@ -180,35 +168,42 @@ class GameViewModel @Inject constructor(
 
     fun onGridItemTapped(itemId: Int) {
         viewModelScope.launch {
-            // Check debouncing first
+            // Atomic check-and-set for debouncing to prevent race conditions
             val currentTime = System.currentTimeMillis()
-            if (currentTime - lastTapTime < tapDebounceMs) {
+            val previousTapTime = lastTapTime.getAndSet(currentTime)
+            if (currentTime - previousTapTime < tapDebounceMs) {
                 return@launch
             }
-            lastTapTime = currentTime
 
-            // Single atomic operation to check state, find item, and determine result
-            val tapResult = gameStateManager.withCurrentState { state ->
+            // Single atomic operation to check state, find item, and update isGameActive
+            var tapResult: TapResult = TapResult.Inactive
+            gameStateManager.updateGameState { state ->
                 if (!state.isGameActive) {
-                    return@withCurrentState TapResult.Inactive
+                    tapResult = TapResult.Inactive
+                    return@updateGameState state
                 }
 
                 val item = gameLogicManager.findTappedItem(state.grid, itemId)
-                    ?: return@withCurrentState TapResult.ItemNotFound
+                    ?: run {
+                        tapResult = TapResult.ItemNotFound
+                        return@updateGameState state
+                    }
 
                 // Cancel timer inside the atomic block to prevent race
                 timerManager.cancelTimer()
 
-                if (item.isTarget) {
-                    TapResult.Correct(item, state)
+                return@updateGameState if (item.isTarget) {
+                    tapResult = TapResult.Correct(item, state)
+                    state.copy(isGameActive = false)
                 } else {
-                    TapResult.Incorrect(item)
+                    tapResult = TapResult.Incorrect(item)
+                    state.copy(isGameActive = false)
                 }
             }
 
             // Process result outside the lock
-            when (tapResult) {
-                is TapResult.Inactive, is TapResult.Debounced -> {
+            when (val result = tapResult) {
+                is TapResult.Inactive -> {
                     // No action needed
                     return@launch
                 }
@@ -220,17 +215,15 @@ class GameViewModel @Inject constructor(
                 }
 
                 is TapResult.Correct -> {
-                    // Deactivate game while processing
-                    gameStateManager.updateGameState { it.copy(isGameActive = false) }
-
-                    gameEventManager.stopTimeoutSound()
+                    soundManager.stopTimeoutSound()
+                    soundManager.playCorrectSound()
                     gameEventManager.emitEvent(GameUiEvent.CorrectTap(itemId))
 
-                    val updatedState = gameLogicManager.processCorrectAnswer(tapResult.state)
+                    val updatedState = gameLogicManager.processCorrectAnswer(result.state)
 
-                    preferencesManager.incrementCorrectAnswers()
-                    preferencesManager.updateHighScore(updatedState.score)
-                    preferencesManager.updateHighestLevel(updatedState.level)
+                    userPreferencesRepository.incrementCorrectAnswers()
+                    userPreferencesRepository.updateHighScore(updatedState.score)
+                    userPreferencesRepository.updateHighestLevel(updatedState.level)
 
                     gameStateManager.updateGameState { updatedState }
                     delay(400)
@@ -238,10 +231,9 @@ class GameViewModel @Inject constructor(
                 }
 
                 is TapResult.Incorrect -> {
-                    // Deactivate game while processing
-                    gameStateManager.updateGameState { it.copy(isGameActive = false) }
-
+                    soundManager.playWrongSound()
                     gameEventManager.emitEvent(GameUiEvent.IncorrectTap(itemId))
+                    // ShakeGrid is emitted by GameEventManager after IncorrectTap
                     delay(500)
                     handleLifeLoss(GameResult.Wrong)
                 }
@@ -258,14 +250,18 @@ class GameViewModel @Inject constructor(
 
     fun useExtraTime() {
         viewModelScope.launch {
-            val canUseExtraTime = gameStateManager.withCurrentState { currentState ->
-                gameLogicManager.canUseExtraTime(currentState)
+            // Atomic check-and-update to prevent double-tap exploits
+            var didUseExtraTime = false
+            gameStateManager.updateGameState { currentState ->
+                if (gameLogicManager.canUseExtraTime(currentState)) {
+                    didUseExtraTime = true
+                    gameLogicManager.useExtraTime(currentState)
+                } else {
+                    currentState
+                }
             }
 
-            if (canUseExtraTime) {
-                gameStateManager.updateGameState { currentState ->
-                    gameLogicManager.useExtraTime(currentState)
-                }
+            if (didUseExtraTime) {
                 timerManager.startTimer(5)
             }
         }
@@ -314,17 +310,19 @@ class GameViewModel @Inject constructor(
                 )
             }
 
-            preferencesManager.updateHighScore(currentScore)
-            preferencesManager.updateHighestLevel(currentLevel)
+            userPreferencesRepository.updateHighScore(currentScore)
+            userPreferencesRepository.updateHighestLevel(currentLevel)
             themeManager.checkThemeUnlockMilestones()
 
             targetId?.let {
                 gameEventManager.emitEvent(GameUiEvent.RevealAnswer(it))
                 delay(500)
                 delay(2500)
+                soundManager.playGameOverSound()
                 gameEventManager.emitEvent(GameUiEvent.GameOver)
                 delay(200)
             } ?: run {
+                soundManager.playGameOverSound()
                 gameEventManager.emitEvent(GameUiEvent.GameOver)
                 delay(300)
             }
@@ -339,16 +337,23 @@ class GameViewModel @Inject constructor(
 
     fun continueAfterLifeLoss() {
         viewModelScope.launch {
-            val (canContinue, currentLevel) = gameStateManager.withCurrentState { currentState ->
-                gameLogicManager.canContinue(currentState) to currentState.level
+            // Atomic check-and-update to prevent double-tap exploits
+            var didContinue = false
+            var levelForTimer = 1
+
+            gameStateManager.updateGameState { currentState ->
+                if (gameLogicManager.canContinue(currentState)) {
+                    didContinue = true
+                    levelForTimer = currentState.level
+                    gameLogicManager.continueAfterLifeLoss(currentState)
+                } else {
+                    currentState
+                }
             }
 
-            if (canContinue) {
+            if (didContinue) {
                 timerManager.cancelTimer()
-                gameStateManager.updateGameState { currentState ->
-                    gameLogicManager.continueAfterLifeLoss(currentState)
-                }
-                timerManager.startTimer(gameLogicManager.getTimerDuration(currentLevel))
+                timerManager.startTimer(gameLogicManager.getTimerDuration(levelForTimer))
             }
         }
     }
@@ -357,13 +362,13 @@ class GameViewModel @Inject constructor(
     fun toggleSound() {
         viewModelScope.launch {
             try {
-                val currentPrefs = preferencesManager.userPreferences.first()
+                val currentPrefs = userPreferencesRepository.userPreferences.first()
                 val newSoundState = !currentPrefs.soundEnabled
-                preferencesManager.setSoundEnabled(newSoundState)
+                userPreferencesRepository.setSoundEnabled(newSoundState)
                 soundManager.setSoundEnabled(newSoundState)
             } catch (e: Exception) {
                 android.util.Log.w("GameViewModel", "Failed to toggle sound preferences", e)
-                soundManager.setSoundEnabled(!soundManager.isSoundEnabled)
+                soundManager.setSoundEnabled(!soundManager.isSoundEnabled())
             }
         }
     }
@@ -383,6 +388,6 @@ class GameViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         timerManager.cancelTimer()
-        gameEventManager.stopTimeoutSound()
+        soundManager.stopTimeoutSound()
     }
 }

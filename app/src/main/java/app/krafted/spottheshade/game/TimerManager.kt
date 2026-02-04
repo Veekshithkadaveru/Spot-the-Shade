@@ -6,20 +6,24 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
+sealed class TimerEvent {
+    data class Tick(val secondsLeft: Int) : TimerEvent()
+    object Warning : TimerEvent()
+    object Critical : TimerEvent()
+    object Urgent : TimerEvent()
+    object Timeout : TimerEvent()
+}
+
 class TimerManager(
     private val scope: CoroutineScope,
-    private val onTimeUpdate: (Int) -> Unit,
-    private val onTimeWarning: () -> Unit,
-    private val onTimeCritical: () -> Unit,
-    private val onTimeUrgent: () -> Unit,
-    private val onTimeout: () -> Unit
+    private val onEvent: (TimerEvent) -> Unit
 ) {
     private var timerJob: Job? = null
 
     fun startTimer(totalSeconds: Int) {
         cancelTimer()
 
-        onTimeUpdate(totalSeconds)
+        onEvent(TimerEvent.Tick(totalSeconds))
 
         timerJob = scope.launch {
             try {
@@ -27,15 +31,15 @@ class TimerManager(
                     delay(1000)
 
                     when (timeLeft) {
-                        5 -> onTimeWarning()
-                        3 -> onTimeCritical()
-                        1 -> onTimeUrgent()
+                        5 -> onEvent(TimerEvent.Warning)
+                        3 -> onEvent(TimerEvent.Critical)
+                        1 -> onEvent(TimerEvent.Urgent)
                     }
 
-                    onTimeUpdate(timeLeft)
+                    onEvent(TimerEvent.Tick(timeLeft))
                 }
 
-                onTimeout()
+                onEvent(TimerEvent.Timeout)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

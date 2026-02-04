@@ -1,6 +1,5 @@
 package app.krafted.spottheshade.game
 
-import app.krafted.spottheshade.services.SoundManager
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import javax.inject.Inject
@@ -18,21 +17,17 @@ sealed class GameUiEvent {
     data class RevealAnswer(val targetId: Int) : GameUiEvent()
 }
 
-class GameEventManager @Inject constructor(
-    private val soundManager: SoundManager
-) {
+class GameEventManager @Inject constructor() {
     private val _uiEvents = MutableSharedFlow<GameUiEvent>()
     val uiEvents = _uiEvents.asSharedFlow()
 
     suspend fun emitEvent(event: GameUiEvent) {
         when (event) {
             is GameUiEvent.CorrectTap -> {
-                soundManager.playCorrectSound()
                 _uiEvents.emit(event)
                 _uiEvents.emit(GameUiEvent.LevelUp)
             }
             is GameUiEvent.IncorrectTap -> {
-                soundManager.playWrongSound()
                 _uiEvents.emit(event)
                 _uiEvents.emit(GameUiEvent.ShakeGrid)
             }
@@ -40,7 +35,6 @@ class GameEventManager @Inject constructor(
                 _uiEvents.emit(event)
             }
             GameUiEvent.TimeWarning -> {
-                soundManager.playTimeoutSound()
                 _uiEvents.emit(event)
             }
             GameUiEvent.TimeCritical,
@@ -48,7 +42,6 @@ class GameEventManager @Inject constructor(
                 _uiEvents.emit(event)
             }
             GameUiEvent.GameOver -> {
-                soundManager.playGameOverSound()
                 _uiEvents.emit(event)
             }
             is GameUiEvent.RevealAnswer -> {
@@ -58,9 +51,5 @@ class GameEventManager @Inject constructor(
                 _uiEvents.emit(event)
             }
         }
-    }
-
-    fun stopTimeoutSound() {
-        soundManager.stopTimeoutSound()
     }
 }

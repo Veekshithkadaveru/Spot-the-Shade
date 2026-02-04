@@ -43,20 +43,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import app.krafted.spottheshade.data.model.UserPreferences
 import app.krafted.spottheshade.ui.screens.components.ThemeSelector
-import app.krafted.spottheshade.ui.theme.DailyChallengeEnd
-import app.krafted.spottheshade.ui.theme.DailyChallengeStart
-import app.krafted.spottheshade.ui.theme.GradientGreen
-import app.krafted.spottheshade.ui.theme.GradientOrange
-import app.krafted.spottheshade.ui.theme.GradientYellow
+import app.krafted.spottheshade.ui.navigation.Screen
 import app.krafted.spottheshade.ui.theme.LocalThemeColors
-import app.krafted.spottheshade.ui.theme.PlayButtonEnd
 import app.krafted.spottheshade.ui.theme.LockedButtonEnd
 import app.krafted.spottheshade.ui.theme.LockedButtonStart
-import app.krafted.spottheshade.ui.theme.PlayButtonStart
 import app.krafted.spottheshade.ui.theme.White
 import app.krafted.spottheshade.viewmodel.GameViewModel
 import androidx.compose.foundation.Image
@@ -64,7 +57,7 @@ import androidx.compose.foundation.Image
 @Composable
 fun MainMenuScreen(
     navController: NavHostController,
-    viewModel: GameViewModel = hiltViewModel()
+    viewModel: GameViewModel
 ) {
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val themeColors = LocalThemeColors.current
@@ -164,7 +157,7 @@ fun MainMenuScreen(
                 subText = "HIGH SCORE: ${if (userPreferences.highScore > 0) "${userPreferences.highScore}" else "0"}",
                 gradientColors = themeColors.buttonPrimary,
                 textColor = themeColors.textOnButton,
-                onClick = { viewModel.navigateToGameplay() },
+                onClick = { navController.navigate(Screen.Gameplay.route) },
                 modifier = Modifier.padding(bottom = 24.dp),
                 contentDescription = "Start new game. Current high score: ${userPreferences.highScore}"
             )

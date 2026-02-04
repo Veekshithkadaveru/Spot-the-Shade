@@ -32,10 +32,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import app.krafted.spottheshade.data.model.GameResult
 import app.krafted.spottheshade.data.model.UserPreferences
+import app.krafted.spottheshade.ui.navigation.Screen
 import app.krafted.spottheshade.ui.theme.LocalThemeColors
 import app.krafted.spottheshade.viewmodel.GameViewModel
 import androidx.compose.ui.graphics.Shadow
@@ -45,12 +44,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.navigation.NavHostController
 
 @Composable
 fun GameOverScreen(
     navController: NavHostController,
     finalScore: Int,
-    viewModel: GameViewModel = hiltViewModel()
+    viewModel: GameViewModel
 ) {
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val gameState by viewModel.gameState.collectAsState()
@@ -240,7 +240,6 @@ fun GameOverScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // TODO: REWARDED AD INTEGRATION - Game Over Monetization Opportunities
             // Consider adding these monetization features:
             // 1. "REVIVE" button - Watch ad to continue with extra lives
             // 2. "DOUBLE COINS" button - Watch ad to double any earned coins/points
@@ -250,7 +249,13 @@ fun GameOverScreen(
 
             // Retry Button
             Button(
-                onClick = { viewModel.navigateToGameplay() },
+                onClick = {
+                    navController.navigate(Screen.Gameplay.route) {
+                        popUpTo(Screen.MainMenu.route) {
+                            inclusive = false
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -283,7 +288,13 @@ fun GameOverScreen(
 
             // Main Menu Button
             Button(
-                onClick = { viewModel.navigateToMainMenu() },
+                onClick = {
+                    navController.navigate(Screen.MainMenu.route) {
+                        popUpTo(Screen.MainMenu.route) {
+                            inclusive = false
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)

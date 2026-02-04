@@ -60,7 +60,12 @@ class GameLogicManager(
     }
 
     fun canContinue(gameState: GameState): Boolean {
-        return gameState.lives > 0 && gameState.gameResult != GameResult.GameOver
+        return gameState.lives > 0 && when (gameState.gameResult) {
+            GameResult.Wrong,
+            GameResult.Timeout,
+            GameResult.OfferContinue -> true
+            else -> false
+        }
     }
 
     fun continueAfterLifeLoss(gameState: GameState): GameState {
