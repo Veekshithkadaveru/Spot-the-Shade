@@ -25,6 +25,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -44,8 +47,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.navigation.NavHostController
+import app.krafted.spottheshade.data.model.ThemeType
 import app.krafted.spottheshade.data.model.UserPreferences
 import app.krafted.spottheshade.ui.screens.components.ThemeSelector
+import app.krafted.spottheshade.ui.screens.components.ThemeUnlockDialog
 import app.krafted.spottheshade.ui.navigation.Screen
 import app.krafted.spottheshade.ui.theme.LocalThemeColors
 import app.krafted.spottheshade.ui.theme.LockedButtonEnd
@@ -62,6 +67,18 @@ fun MainMenuScreen(
     val userPreferences by viewModel.userPreferences.collectAsState(initial = UserPreferences())
     val themeColors = LocalThemeColors.current
     val context = LocalContext.current
+
+    // State for showing theme unlock dialog
+    var lockedThemeToShow by remember { mutableStateOf<ThemeType?>(null) }
+
+    // Show unlock dialog when a locked theme is tapped
+    lockedThemeToShow?.let { theme ->
+        ThemeUnlockDialog(
+            theme = theme,
+            userPreferences = userPreferences,
+            onDismiss = { lockedThemeToShow = null }
+        )
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -181,8 +198,8 @@ fun MainMenuScreen(
                 onThemeSelected = { theme ->
                     viewModel.setCurrentTheme(theme)
                 },
-                onUnlockTheme = { theme ->
-                    viewModel.unlockThemeWithRewardedAd(theme)
+                onLockedThemeTapped = { theme ->
+                    lockedThemeToShow = theme
                 },
                 modifier = Modifier.padding(bottom = 16.dp)
             )

@@ -47,7 +47,8 @@ enum class ThemeType {
     WINTER,
     SPRING,
     NEON_CYBER,
-    VOLCANIC
+    VOLCANIC,
+    ROYAL_GOLD
 }
 
 enum class Difficulty(val label: String) {

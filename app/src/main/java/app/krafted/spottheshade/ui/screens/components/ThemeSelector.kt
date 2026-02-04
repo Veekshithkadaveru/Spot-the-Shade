@@ -46,7 +46,7 @@ import app.krafted.spottheshade.ui.theme.*
 fun ThemeSelector(
     userPreferences: UserPreferences,
     onThemeSelected: (ThemeType) -> Unit,
-    onUnlockTheme: (ThemeType) -> Unit,
+    onLockedThemeTapped: (ThemeType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val themeColors = LocalThemeColors.current
@@ -74,6 +74,11 @@ fun ThemeSelector(
                 }
         )
 
+        // Sort themes: unlocked first, then locked
+        val sortedThemes = ThemeType.entries.sortedByDescending {
+            userPreferences.unlockedThemes.contains(it)
+        }
+
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
@@ -81,13 +86,13 @@ fun ThemeSelector(
                 contentDescription = "Horizontal scrollable list of game themes"
             }
         ) {
-            items(ThemeType.entries.toTypedArray()) { theme ->
+            items(sortedThemes) { theme ->
                 ThemeCard(
                     theme = theme,
                     isUnlocked = userPreferences.unlockedThemes.contains(theme),
                     isSelected = userPreferences.currentTheme == theme,
                     onThemeSelected = onThemeSelected,
-                    onUnlockTheme = onUnlockTheme
+                    onLockedThemeTapped = onLockedThemeTapped
                 )
             }
         }
@@ -100,7 +105,7 @@ fun ThemeCard(
     isUnlocked: Boolean,
     isSelected: Boolean,
     onThemeSelected: (ThemeType) -> Unit,
-    onUnlockTheme: (ThemeType) -> Unit,
+    onLockedThemeTapped: (ThemeType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val themeColors = getThemeColors(theme)
@@ -153,14 +158,8 @@ fun ThemeCard(
                 if (isUnlocked) {
                     onThemeSelected(theme)
                 } else {
-                    // TODO: REWARDED AD INTEGRATION - Theme Unlock UI
-                    // When user clicks on locked theme, this should:
-                    // 1. Show a dialog/bottom sheet explaining the theme unlock
-                    // 2. Display "Watch Ad to Unlock" button
-                    // 3. Show loading state while ad loads
-                    // 4. Handle ad failures gracefully with alternative options
-                    // 5. Provide visual feedback when theme is successfully unlocked
-                    onUnlockTheme(theme)
+                    // Show unlock dialog with requirements and progress
+                    onLockedThemeTapped(theme)
                 }
             },
         shape = RoundedCornerShape(16.dp),
@@ -231,15 +230,7 @@ fun ThemeCard(
                     )
                 }
             } else {
-                // TODO: REWARDED AD INTEGRATION - Locked Theme UI
-                // This locked state UI should be enhanced to:
-                // 1. Show attractive "Watch Ad" or unlock requirement clearly
-                // 2. Add animated pulsing effect to grab attention
-                // 3. Display estimated unlock time for ads (e.g., "30 sec ad")
-                // 4. Show loading spinner when ad is loading
-                // 5. Provide alternative unlock paths (achievements vs ads)
-
-                // Locked state
+                // Locked state - tap to show unlock requirements dialog
                 Column(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -293,6 +284,7 @@ private fun getThemeDisplayName(theme: ThemeType): String {
         ThemeType.SPRING -> "Spring"
         ThemeType.NEON_CYBER -> "Neon Cyber"
         ThemeType.VOLCANIC -> "Volcanic"
+        ThemeType.ROYAL_GOLD -> "Royal Gold"
     }
 }
 
@@ -306,5 +298,6 @@ private fun getUnlockText(theme: ThemeType): String {
         ThemeType.SPRING -> "🌸 Level 50"
         ThemeType.NEON_CYBER -> "⚡ 1000 Pts"
         ThemeType.VOLCANIC -> "🌋 2000 Pts"
+        ThemeType.ROYAL_GOLD -> "\uD83D\uDC51 5000 Pts"
     }
 }

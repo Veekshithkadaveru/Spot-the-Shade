@@ -94,6 +94,15 @@ val VolcanicBright = Color(0xFFFF4500)       // Bright lava
 val VolcanicGold = Color(0xFFFFD700)         // Lava gold
 val VolcanicYellow = Color(0xFFFFFF99)       // Lava sparks
 
+// ROYAL_GOLD Theme Colors - Premium, luxurious, and exclusive
+val RoyalDark = Color(0xFF121212)            // Rich black base
+val RoyalPurple = Color(0xFF240046)          // Imperial deep purple
+val RoyalVelvet = Color(0xFF3C096C)          // Rich velvet
+val RoyalGoldDark = Color(0xFF9D4EDD)        // Deep gold/purple bridge
+val RoyalGold = Color(0xFFFFD700)            // Pure gold
+val RoyalBright = Color(0xFFFFEA00)          // Bright gold
+val RoyalShine = Color(0xFFFFFACD)           // Lemon chiffon shine
+
 // Theme Color Data Class - Extended for wallpaper-like gradients
 data class ThemeColors(
     val primary: Color,
