@@ -8,9 +8,9 @@ import app.krafted.spottheshade.R
 import app.krafted.spottheshade.data.repository.ErrorFeedbackManager
 import app.krafted.spottheshade.data.repository.UserError
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import app.krafted.spottheshade.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,10 +22,12 @@ class SoundManager @Inject constructor(
     private val errorFeedbackManager: ErrorFeedbackManager
 ) {
 
+    @Volatile
     private var soundEnabled = true
-    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private val audioManager: AudioManager? = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
     private var soundPool: SoundPool? = null
     private val soundMap = mutableMapOf<SoundType, Int>()
+    @Volatile
     private var currentTimeoutStreamId: Int? = null
     private var isReleased = false
 
@@ -58,13 +60,13 @@ class SoundManager @Inject constructor(
             soundMap[SoundType.TIMEOUT] = pool.load(context, R.raw.timeout_sound, 1)
             soundMap[SoundType.GAME_OVER] = pool.load(context, R.raw.game_over_sound, 1)
         } catch (e: android.content.res.Resources.NotFoundException) {
-            android.util.Log.e("SoundManager", "Sound file not found in resources", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("SoundManager", "Sound file not found in resources", e)
             throw RuntimeException("Sound files not found in resources", e)
         } catch (e: OutOfMemoryError) {
-            android.util.Log.e("SoundManager", "Out of memory while loading sounds", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("SoundManager", "Out of memory while loading sounds", e)
             throw RuntimeException("Out of memory while loading sounds", e)
         } catch (e: Exception) {
-            android.util.Log.e("SoundManager", "Unexpected error loading sounds", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("SoundManager", "Unexpected error loading sounds", e)
             throw e
         }
     }
@@ -78,13 +80,13 @@ class SoundManager @Inject constructor(
                 } catch (e: Exception) {
                     if (attempt == maxRetries - 1) {
                         // Final attempt failed - show user feedback and enable silent mode
-                        android.util.Log.e("SoundManager", "All sound loading attempts failed", e)
+                        if (BuildConfig.DEBUG) android.util.Log.e("SoundManager", "All sound loading attempts failed", e)
                         errorFeedbackManager.emitError(UserError.SoundLoadFailed)
                         setSoundEnabled(false)
                     } else {
                         // Wait with exponential backoff before retry
                         delay(500L * (attempt + 1))
-                        android.util.Log.w("SoundManager", "Sound loading attempt ${attempt + 1} failed, retrying...", e)
+                        if (BuildConfig.DEBUG) android.util.Log.w("SoundManager", "Sound loading attempt ${attempt + 1} failed, retrying...", e)
                     }
                 }
             }
@@ -95,10 +97,11 @@ class SoundManager @Inject constructor(
         if (!soundEnabled || isReleased) return
 
         val pool = soundPool ?: return
-        val streamVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val am = audioManager ?: return
+        val streamVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC)
         if (streamVolume == 0) return
 
-        scope.launch(Dispatchers.IO) {
+        scope.launch {
             try {
                 soundMap[soundType]?.let { soundId ->
                     val streamId = pool.play(soundId, volume, volume, 1, 0, rate)
@@ -107,7 +110,7 @@ class SoundManager @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.w("SoundManager", "Sound playback failed for $soundType", e)
+                if (BuildConfig.DEBUG) android.util.Log.w("SoundManager", "Sound playback failed for $soundType", e)
                 // Continue silently - sound failure shouldn't crash game
                 // Only show error for critical sounds or repeated failures
                 if (soundType == SoundType.GAME_OVER) {

@@ -4,6 +4,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import app.krafted.spottheshade.BuildConfig
 import kotlin.coroutines.cancellation.CancellationException
 
 sealed class TimerEvent {
@@ -27,8 +28,12 @@ class TimerManager(
 
         timerJob = scope.launch {
             try {
+                var nextTickTime = System.currentTimeMillis() + 1000
                 for (timeLeft in (totalSeconds - 1) downTo 0) {
-                    delay(1000)
+                    val now = System.currentTimeMillis()
+                    val delayMs = (nextTickTime - now).coerceAtLeast(0)
+                    delay(delayMs)
+                    nextTickTime += 1000
 
                     when (timeLeft) {
                         5 -> onEvent(TimerEvent.Warning)
@@ -43,7 +48,7 @@ class TimerManager(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                android.util.Log.e("TimerManager", "Timer error", e)
+                if (BuildConfig.DEBUG) android.util.Log.e("TimerManager", "Timer error", e)
             }
         }
     }

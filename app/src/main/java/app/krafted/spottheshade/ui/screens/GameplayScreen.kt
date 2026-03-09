@@ -18,15 +18,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -67,7 +66,7 @@ fun GameplayScreen(
     val haptic = LocalHapticFeedback.current
 
     val gridShakeAnimation = remember { Animatable(0f) }
-    val itemAnimations = remember { mutableMapOf<Int, Animatable<Float, AnimationVector1D>>() }
+    val itemAnimations = remember { mutableStateMapOf<Int, Animatable<Float, AnimationVector1D>>() }
     var revealedTargetId by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(gameState.grid) {
@@ -87,23 +86,23 @@ fun GameplayScreen(
             itemAnimations.putAll(animationsToKeep)
         }
 
+        // Add animations for new items only with proper bounds checking
+        gameState.grid.forEach { item ->
+            if (!itemAnimations.containsKey(item.id)) {
+                itemAnimations[item.id] = Animatable(1f)
+            }
+        }
+
         revealedTargetId = null
     }
 
-    // Add animations for new items only with proper bounds checking
-    gameState.grid.forEach { item ->
-        if (!itemAnimations.containsKey(item.id)) {
-            itemAnimations[item.id] = Animatable(1f)
-        }
-    }
-
     // Start game when screen loads
-    LaunchedEffect(key1 = true) {
+    LaunchedEffect(Unit) {
         viewModel.startGame()
     }
 
     // Listen for UI events from the ViewModel (animations + haptics)
-    LaunchedEffect(key1 = viewModel.uiEvents) {
+    LaunchedEffect(Unit) {
         viewModel.uiEvents.collectLatest { event ->
             when (event) {
                 is GameUiEvent.CorrectTap -> {
@@ -203,13 +202,14 @@ fun GameplayScreen(
     }
 
     // Professional game over transition with refined timing
+    var hasNavigatedToGameOver by remember { mutableStateOf(false) }
     LaunchedEffect(gameState.gameResult) {
-        if (gameState.gameResult == GameResult.GameOver) {
+        if (gameState.gameResult == GameResult.GameOver && !hasNavigatedToGameOver) {
+            hasNavigatedToGameOver = true
             delay(500)
             navController.navigate(
                 Screen.GameOver.createRoute(
-                    gameState.score,
-                    gameState.level
+                    gameState.score
                 )
             ) {
                 popUpTo(Screen.MainMenu.route) {
@@ -249,7 +249,6 @@ fun GameplayScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

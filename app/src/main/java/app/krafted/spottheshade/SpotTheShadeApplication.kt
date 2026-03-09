@@ -5,6 +5,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import app.krafted.spottheshade.services.SoundManager
+import app.krafted.spottheshade.BuildConfig
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -22,7 +23,7 @@ class SpotTheShadeApplication : Application(), DefaultLifecycleObserver {
             ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         } catch (e: Exception) {
             // ProcessLifecycleOwner not available on older devices
-            android.util.Log.w("SpotTheShadeApp", "ProcessLifecycleOwner not available", e)
+            if (BuildConfig.DEBUG) android.util.Log.w("SpotTheShadeApp", "ProcessLifecycleOwner not available", e)
         }
     }
 

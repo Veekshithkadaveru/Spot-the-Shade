@@ -1,9 +1,19 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
     id("dagger.hilt.android.plugin")
+}
+
+// Load keystore.properties for release signing (create keystore.properties from keystore.properties.template)
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -20,13 +30,28 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    if (keystorePropertiesFile.exists()) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(keystoreProperties["storeFile"].toString())
+                storePassword = keystoreProperties["storePassword"].toString()
+                keyAlias = keystoreProperties["keyAlias"].toString()
+                keyPassword = keystoreProperties["keyPassword"].toString()
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
@@ -38,6 +63,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -51,6 +77,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation("androidx.compose.material:material-icons-extended")
     
     // ViewModel and Lifecycle
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -68,11 +95,6 @@ dependencies {
     
     // Lifecycle for process lifecycle management
     implementation("androidx.lifecycle:lifecycle-process:${libs.versions.lifecycleRuntimeKtx.get()}")
-    
-    // TODO: REWARDED AD INTEGRATION - Add AdMob Dependencies
-    // Uncomment these lines when ready to integrate rewarded ads:
-    // implementation("com.google.android.gms:play-services-ads:23.0.0")
-    // implementation("androidx.lifecycle:lifecycle-process:2.7.0") // For app lifecycle tracking
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

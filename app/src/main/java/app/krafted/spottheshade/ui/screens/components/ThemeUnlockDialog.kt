@@ -18,9 +18,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
+import app.krafted.spottheshade.R
 import app.krafted.spottheshade.data.model.ThemeType
 import app.krafted.spottheshade.data.model.UserPreferences
+import app.krafted.spottheshade.data.model.unlockRequirement
 import app.krafted.spottheshade.ui.theme.getThemeColors
 
 @Composable
@@ -30,9 +33,9 @@ fun ThemeUnlockDialog(
     onDismiss: () -> Unit
 ) {
     val themeColors = getThemeColors(theme)
-    val requirement = getUnlockRequirement(theme)
+    val requirement = theme.unlockRequirement()
     val currentProgress = getPlayerProgress(theme, userPreferences)
-    val progress = (currentProgress.toFloat() / requirement.second).coerceIn(0f, 1f)
+    val progress = (currentProgress.toFloat() / requirement.second.coerceAtLeast(1)).coerceIn(0f, 1f)
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
@@ -57,7 +60,7 @@ fun ThemeUnlockDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "${getThemeEmoji(theme)} ${getThemeDisplayName(theme)} Theme",
+                    text = stringResource(R.string.theme_title_format, getThemeEmoji(theme), getThemeDisplayName(theme)),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -74,7 +77,11 @@ fun ThemeUnlockDialog(
                             brush = Brush.verticalGradient(
                                 colors = themeColors.gradientColors.let { colors ->
                                     if (colors.size >= 4) {
-                                        listOf(colors[1], colors[3], colors[5])
+                                        listOf(
+                                            colors.getOrElse(1) { colors.last() },
+                                            colors.getOrElse(3) { colors.last() },
+                                            colors.getOrElse(5) { colors.last() }
+                                        )
                                     } else {
                                         colors
                                     }
@@ -105,7 +112,7 @@ fun ThemeUnlockDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Locked",
+                        text = stringResource(R.string.theme_locked_status),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFFFFD700)
@@ -176,7 +183,7 @@ fun ThemeUnlockDialog(
                     )
                 ) {
                     Text(
-                        text = "Keep Playing!",
+                        text = stringResource(R.string.keep_playing),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -216,29 +223,11 @@ private fun getThemeEmoji(theme: ThemeType): String {
 }
 
 /**
- * Returns the unlock requirement type and target value for a theme.
- * @return Pair of (requirementType: "level" or "score", targetValue: Int)
- */
-fun getUnlockRequirement(theme: ThemeType): Pair<String, Int> {
-    return when (theme) {
-        ThemeType.DEFAULT -> Pair("level", 0)
-        ThemeType.FOREST -> Pair("level", 10)
-        ThemeType.OCEAN -> Pair("level", 20)
-        ThemeType.SUNSET -> Pair("level", 30)
-        ThemeType.WINTER -> Pair("level", 40)
-        ThemeType.SPRING -> Pair("level", 50)
-        ThemeType.NEON_CYBER -> Pair("score", 1000)
-        ThemeType.VOLCANIC -> Pair("score", 2000)
-        ThemeType.ROYAL_GOLD -> Pair("score", 5000)
-    }
-}
-
-/**
  * Returns the player's current progress toward unlocking the theme.
  */
 fun getPlayerProgress(theme: ThemeType, prefs: UserPreferences): Int {
-    val requirement = getUnlockRequirement(theme)
-    return when (requirement.first) {
+    val (type, _) = theme.unlockRequirement()
+    return when (type) {
         "level" -> prefs.highestLevel
         "score" -> prefs.highScore
         else -> 0
@@ -246,17 +235,17 @@ fun getPlayerProgress(theme: ThemeType, prefs: UserPreferences): Int {
 }
 
 private fun getUnlockRequirementText(theme: ThemeType): String {
-    val requirement = getUnlockRequirement(theme)
-    return when (requirement.first) {
-        "level" -> "Reach Level ${requirement.second} to unlock"
-        "score" -> "Score ${requirement.second} Points to unlock"
+    val (type, target) = theme.unlockRequirement()
+    return when (type) {
+        "level" -> "Reach Level $target to unlock"
+        "score" -> "Score $target Points to unlock"
         else -> "Keep playing to unlock"
     }
 }
 
 private fun getProgressText(theme: ThemeType, current: Int, target: Int): String {
-    val requirement = getUnlockRequirement(theme)
-    return when (requirement.first) {
+    val (type, _) = theme.unlockRequirement()
+    return when (type) {
         "level" -> "Your Level: $current / $target"
         "score" -> "Your High Score: $current / $target"
         else -> "Progress: $current / $target"

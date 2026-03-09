@@ -6,8 +6,11 @@ import app.krafted.spottheshade.data.model.ShapeType
 import app.krafted.spottheshade.data.model.Difficulty
 import kotlin.math.max
 import kotlin.random.Random
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class GridGenerator {
+@Singleton
+class GridGenerator @Inject constructor() {
 
     companion object {
         private const val MAX_GRID_SIZE = 8
@@ -113,7 +116,8 @@ class GridGenerator {
         val diff = calculateColorDifference(level)
 
         val baseColor = HSLColor.fromComponents(hue, saturation, baseLight)
-        val targetColor = HSLColor.fromComponents(hue, saturation, baseLight - diff)
+        val targetLight = (baseLight - diff).coerceIn(0.05f, 0.95f)
+        val targetColor = HSLColor.fromComponents(hue, saturation, targetLight)
 
         val targetPosition = Random.nextInt(total)
 

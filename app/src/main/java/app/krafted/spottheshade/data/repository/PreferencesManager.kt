@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import app.krafted.spottheshade.data.model.ThemeType
 import app.krafted.spottheshade.data.model.UserPreferences
+import app.krafted.spottheshade.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -41,7 +42,7 @@ class PreferencesManager @Inject constructor(
                 try {
                     ThemeType.valueOf(it)
                 } catch (e: IllegalArgumentException) {
-                    android.util.Log.w("PreferencesManager", "Invalid theme name found: $it", e)
+                    if (BuildConfig.DEBUG) android.util.Log.w("PreferencesManager", "Invalid theme name found: $it", e)
                     errorFeedbackManager.emitError(UserError.ThemeCorrupted)
                     null
                 }
@@ -52,7 +53,7 @@ class PreferencesManager @Inject constructor(
                 try {
                     ThemeType.valueOf(it)
                 } catch (e: IllegalArgumentException) {
-                    android.util.Log.w("PreferencesManager", "Invalid current theme found: $it", e)
+                    if (BuildConfig.DEBUG) android.util.Log.w("PreferencesManager", "Invalid current theme found: $it", e)
                     errorFeedbackManager.emitError(UserError.ThemeCorrupted)
                     tryFallbackTheme()
                 }
@@ -62,7 +63,7 @@ class PreferencesManager @Inject constructor(
             val validatedCurrentTheme = if (unlockedThemes.contains(rawCurrentTheme)) {
                 rawCurrentTheme
             } else {
-                android.util.Log.w("PreferencesManager", "Current theme $rawCurrentTheme not in unlocked themes, resetting to DEFAULT")
+                if (BuildConfig.DEBUG) android.util.Log.w("PreferencesManager", "Current theme $rawCurrentTheme not in unlocked themes, resetting to DEFAULT")
                 ThemeType.DEFAULT
             }
 
@@ -86,7 +87,7 @@ class PreferencesManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("PreferencesManager", "Failed to update high score", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to update high score", e)
             errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
@@ -100,7 +101,7 @@ class PreferencesManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("PreferencesManager", "Failed to update highest level", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to update highest level", e)
             errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
@@ -112,7 +113,7 @@ class PreferencesManager @Inject constructor(
                 preferences[UNLOCKED_THEMES_KEY] = currentThemes + theme.name
             }
         } catch (e: Exception) {
-            android.util.Log.e("PreferencesManager", "Failed to unlock theme: $theme", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to unlock theme: $theme", e)
             errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
@@ -123,7 +124,7 @@ class PreferencesManager @Inject constructor(
                 preferences[CURRENT_THEME_KEY] = theme.name
             }
         } catch (e: Exception) {
-            android.util.Log.e("PreferencesManager", "Failed to set current theme: $theme", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to set current theme: $theme", e)
             errorFeedbackManager.emitError(UserError.ThemeLoadFailed)
         }
     }
@@ -134,7 +135,7 @@ class PreferencesManager @Inject constructor(
                 preferences[SOUND_ENABLED_KEY] = enabled
             }
         } catch (e: Exception) {
-            android.util.Log.e("PreferencesManager", "Failed to set sound enabled: $enabled", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to set sound enabled: $enabled", e)
             errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
@@ -146,7 +147,7 @@ class PreferencesManager @Inject constructor(
                 preferences[TOTAL_GAMES_PLAYED_KEY] = current + 1
             }
         } catch (e: Exception) {
-            android.util.Log.e("PreferencesManager", "Failed to increment games played", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to increment games played", e)
             // Don't show error to user for analytics failures
         }
     }
@@ -158,7 +159,7 @@ class PreferencesManager @Inject constructor(
                 preferences[TOTAL_CORRECT_ANSWERS_KEY] = current + 1
             }
         } catch (e: Exception) {
-            android.util.Log.e("PreferencesManager", "Failed to increment correct answers", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to increment correct answers", e)
             // Don't show error to user for analytics failures
         }
     }
@@ -169,19 +170,12 @@ class PreferencesManager @Inject constructor(
                 preferences.clear()
             }
         } catch (e: Exception) {
-            android.util.Log.e("PreferencesManager", "Failed to reset all data", e)
+            if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to reset all data", e)
             errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
         }
     }
 
-    private fun tryFallbackTheme(): ThemeType? {
-        // Try fallback themes in order of preference
-        val fallbackThemes = listOf(
-            ThemeType.DEFAULT,
-            ThemeType.FOREST,
-            ThemeType.OCEAN
-        )
-
-        return fallbackThemes.firstOrNull() ?: ThemeType.DEFAULT
+    private fun tryFallbackTheme(): ThemeType {
+        return ThemeType.DEFAULT
     }
 }

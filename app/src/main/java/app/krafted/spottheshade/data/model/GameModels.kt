@@ -51,6 +51,31 @@ enum class ThemeType {
     ROYAL_GOLD
 }
 
+/**
+ * Single source of truth for theme unlock requirements.
+ * @return Pair of (requirementType: "level" or "score", targetValue: Int)
+ */
+fun ThemeType.unlockRequirement(): Pair<String, Int> = when (this) {
+    ThemeType.DEFAULT -> Pair("level", 0)
+    ThemeType.FOREST -> Pair("level", 10)
+    ThemeType.OCEAN -> Pair("level", 20)
+    ThemeType.SUNSET -> Pair("level", 30)
+    ThemeType.WINTER -> Pair("level", 40)
+    ThemeType.SPRING -> Pair("level", 50)
+    ThemeType.NEON_CYBER -> Pair("score", 1000)
+    ThemeType.VOLCANIC -> Pair("score", 2000)
+    ThemeType.ROYAL_GOLD -> Pair("score", 5000)
+}
+
+fun ThemeType.isUnlockConditionMet(prefs: UserPreferences): Boolean {
+    val (type, target) = unlockRequirement()
+    return when (type) {
+        "level" -> prefs.highestLevel >= target
+        "score" -> prefs.highScore >= target
+        else -> false
+    }
+}
+
 enum class Difficulty(val label: String) {
     EASY("Easy"),
     MEDIUM("Medium"),

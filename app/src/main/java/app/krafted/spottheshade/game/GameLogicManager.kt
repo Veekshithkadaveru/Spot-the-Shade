@@ -4,13 +4,24 @@ import app.krafted.spottheshade.data.model.GameResult
 import app.krafted.spottheshade.data.model.GameState
 import app.krafted.spottheshade.data.model.GridItem
 import app.krafted.spottheshade.game.GridGenerator
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class GameLogicManager(
-    private val gridGenerator: GridGenerator = GridGenerator()
+@Singleton
+class GameLogicManager @Inject constructor(
+    private val gridGenerator: GridGenerator
 ) {
 
     fun calculateScore(currentScore: Int, level: Int): Int {
-        return currentScore + (10 * level)
+        val difficultyMultiplier = when {
+            level < 10 -> 1
+            level < 22 -> 2
+            level < 36 -> 3
+            level < 50 -> 4
+            level < 65 -> 5
+            else -> 6
+        }
+        return currentScore + (10 * difficultyMultiplier)
     }
 
     fun processCorrectAnswer(gameState: GameState): GameState {

@@ -38,8 +38,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import app.krafted.spottheshade.R
 import app.krafted.spottheshade.data.model.ThemeType
 import app.krafted.spottheshade.data.model.UserPreferences
+import app.krafted.spottheshade.data.model.unlockRequirement
 import app.krafted.spottheshade.ui.theme.*
 
 @Composable
@@ -50,13 +54,14 @@ fun ThemeSelector(
     modifier: Modifier = Modifier
 ) {
     val themeColors = LocalThemeColors.current
+    val context = LocalContext.current
 
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "🎨 THEMES",
+            text = stringResource(R.string.themes_header),
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = themeColors.titleColor,
@@ -70,7 +75,7 @@ fun ThemeSelector(
             modifier = Modifier
                 .padding(bottom = 16.dp)
                 .semantics {
-                    contentDescription = "Theme selection section. Swipe to browse available themes"
+                    contentDescription = context.getString(R.string.theme_section_description)
                 }
         )
 
@@ -83,7 +88,7 @@ fun ThemeSelector(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
             modifier = Modifier.semantics {
-                contentDescription = "Horizontal scrollable list of game themes"
+                contentDescription = context.getString(R.string.theme_list_description)
             }
         ) {
             items(sortedThemes) { theme ->
@@ -111,6 +116,7 @@ fun ThemeCard(
     val themeColors = getThemeColors(theme)
     val borderColor = if (isSelected) Color.White else Color.Transparent
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
 
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.05f else 1f,
@@ -144,12 +150,12 @@ fun ThemeCard(
                 val themeName = getThemeDisplayName(theme)
                 contentDescription = if (isUnlocked) {
                     if (isSelected) {
-                        "$themeName theme - currently selected"
+                        context.getString(R.string.theme_selected_description, themeName)
                     } else {
-                        "$themeName theme - tap to select"
+                        context.getString(R.string.theme_select_description, themeName)
                     }
                 } else {
-                    "$themeName theme - locked. ${getUnlockText(theme)}. Tap to unlock with ad"
+                    context.getString(R.string.theme_locked_description, themeName, getUnlockText(theme))
                 }
                 role = Role.Button
             }
@@ -173,7 +179,11 @@ fun ThemeCard(
                         colors = themeColors.gradientColors.let { colors ->
                             // Use a subset of the gradient colors for preview
                             if (colors.size >= 4) {
-                                listOf(colors[1], colors[3], colors[5])
+                                listOf(
+                                    colors.getOrElse(1) { colors.last() },
+                                    colors.getOrElse(3) { colors.last() },
+                                    colors.getOrElse(5) { colors.last() }
+                                )
                             } else {
                                 colors
                             }
@@ -221,7 +231,7 @@ fun ThemeCard(
                 if (isSelected) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Currently selected theme indicator",
+                        contentDescription = context.getString(R.string.selected_theme_indicator_description),
                         tint = Color.White,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -239,7 +249,7 @@ fun ThemeCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Lock,
-                        contentDescription = "Theme is locked",
+                        contentDescription = context.getString(R.string.theme_locked_icon_description),
                         tint = Color.White.copy(alpha = 0.8f),
                         modifier = Modifier.size(32.dp)
                     )
@@ -289,15 +299,22 @@ private fun getThemeDisplayName(theme: ThemeType): String {
 }
 
 private fun getUnlockText(theme: ThemeType): String {
-    return when (theme) {
-        ThemeType.DEFAULT -> "Unlocked"
-        ThemeType.FOREST -> "🌲 Level 10"
-        ThemeType.OCEAN -> "🌊 Level 20"
-        ThemeType.SUNSET -> "🌅 Level 30"
-        ThemeType.WINTER -> "❄️ Level 40"
-        ThemeType.SPRING -> "🌸 Level 50"
-        ThemeType.NEON_CYBER -> "⚡ 1000 Pts"
-        ThemeType.VOLCANIC -> "🌋 2000 Pts"
-        ThemeType.ROYAL_GOLD -> "\uD83D\uDC51 5000 Pts"
+    val (type, target) = theme.unlockRequirement()
+    if (target == 0) return "Unlocked"
+    val emoji = when (theme) {
+        ThemeType.FOREST -> "\uD83C\uDF32"
+        ThemeType.OCEAN -> "\uD83C\uDF0A"
+        ThemeType.SUNSET -> "\uD83C\uDF05"
+        ThemeType.WINTER -> "\u2744\uFE0F"
+        ThemeType.SPRING -> "\uD83C\uDF38"
+        ThemeType.NEON_CYBER -> "\u26A1"
+        ThemeType.VOLCANIC -> "\uD83C\uDF0B"
+        ThemeType.ROYAL_GOLD -> "\uD83D\uDC51"
+        else -> ""
+    }
+    return when (type) {
+        "level" -> "$emoji Level $target"
+        "score" -> "$emoji $target Pts"
+        else -> "Unlocked"
     }
 }

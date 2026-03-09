@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,6 +39,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import app.krafted.spottheshade.R
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -131,9 +135,9 @@ fun MainMenuScreen(
                         )
                         .semantics {
                             contentDescription = if (userPreferences.soundEnabled) {
-                                "Sound enabled. Tap to turn off sound"
+                                context.getString(R.string.sound_enabled_description)
                             } else {
-                                "Sound disabled. Tap to turn on sound"
+                                context.getString(R.string.sound_disabled_description)
                             }
                             role = Role.Button
                         }
@@ -154,7 +158,7 @@ fun MainMenuScreen(
                 modifier = Modifier.padding(bottom = 64.dp)
             ) {
                 Text(
-                    text = "Spot the Shade",
+                    text = stringResource(R.string.game_title),
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Cursive,
@@ -170,26 +174,26 @@ fun MainMenuScreen(
 
             // Play button - use theme-specific button colors
             GradientButton(
-                text = "PLAY",
-                subText = "HIGH SCORE: ${if (userPreferences.highScore > 0) "${userPreferences.highScore}" else "0"}",
+                text = stringResource(R.string.play),
+                subText = stringResource(R.string.high_score_label, if (userPreferences.highScore > 0) "${userPreferences.highScore}" else "0"),
                 gradientColors = themeColors.buttonPrimary,
                 textColor = themeColors.textOnButton,
                 onClick = { navController.navigate(Screen.Gameplay.route) },
                 modifier = Modifier.padding(bottom = 24.dp),
-                contentDescription = "Start new game. Current high score: ${userPreferences.highScore}"
+                contentDescription = stringResource(R.string.start_game_description, userPreferences.highScore)
             )
 
             // Daily Challenge button - use theme-specific secondary colors
             GradientButton(
-                text = "DAILY CHALLENGE",
+                text = stringResource(R.string.daily_challenge),
                 subText = null,
                 gradientColors = listOf(LockedButtonStart, LockedButtonEnd),
                 textColor = themeColors.textOnButton.copy(alpha = 0.6f),
                 onClick = {
-                    Toast.makeText(context, "Coming Soon!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.coming_soon), Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.padding(bottom = 24.dp),
-                contentDescription = "Daily challenge is locked. This feature is coming soon."
+                contentDescription = stringResource(R.string.daily_challenge_locked_description)
             )
 
             // Theme Selector
@@ -279,8 +283,8 @@ fun GradientButton(
                         )
                         Spacer(modifier = Modifier.width(8.dp)) // Add some space between text and icon
                         Image(
-                            painter = painterResource(id = app.krafted.spottheshade.R.drawable.ic_locked),
-                            contentDescription = "Locked",
+                            painter = painterResource(id = R.drawable.ic_locked),
+                            contentDescription = stringResource(R.string.locked),
                             modifier = Modifier.size(24.dp)
                         )
                     }
