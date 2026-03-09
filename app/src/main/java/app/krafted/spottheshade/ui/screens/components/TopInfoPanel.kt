@@ -32,8 +32,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import app.krafted.spottheshade.R
 import app.krafted.spottheshade.ui.theme.ThemeColors
 
 @Composable
@@ -45,6 +47,8 @@ fun TopInfoPanel(
     timeRemaining: Int,
     themeColors: ThemeColors
 ) {
+    val context = LocalContext.current
+
     // Timer pulse animation when time is low
     val infiniteTransition = rememberInfiniteTransition(label = "timerPulse")
     val pulseScale = if (timeRemaining in 1..5) {
@@ -70,7 +74,7 @@ fun TopInfoPanel(
             )
             .padding(16.dp)
             .semantics {
-                contentDescription = "Game status: Level $level, Score $score out of $highScore best, $lives lives remaining, $timeRemaining seconds left"
+                contentDescription = context.getString(R.string.game_status_description, level, score, highScore, lives, timeRemaining)
             }
     ) {
         Column(
@@ -85,18 +89,18 @@ fun TopInfoPanel(
                 // Level section
                 Column(horizontalAlignment = Alignment.Start) {
                     Text(
-                        text = "Level $level",
+                        text = context.getString(R.string.level_label, level),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = themeColors.onSurface
                     )
                     val difficulty = when {
-                        level <= 10 -> "Easy"
-                        level <= 25 -> "Medium"
-                        level <= 40 -> "Hard"
-                        level <= 55 -> "Expert"
-                        level <= 70 -> "Master"
-                        else -> "Legendary"
+                        level <= 10 -> context.getString(R.string.difficulty_easy)
+                        level <= 25 -> context.getString(R.string.difficulty_medium)
+                        level <= 40 -> context.getString(R.string.difficulty_hard)
+                        level <= 55 -> context.getString(R.string.difficulty_expert)
+                        level <= 70 -> context.getString(R.string.difficulty_master)
+                        else -> context.getString(R.string.difficulty_legendary)
                     }
                     Text(
                         text = difficulty,
@@ -111,7 +115,7 @@ fun TopInfoPanel(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Star,
-                            contentDescription = "Score star",
+                            contentDescription = context.getString(R.string.score_star_description),
                             tint = Color(0xFFFFD700), // Keep gold star
                             modifier = Modifier.size(16.dp)
                         )
@@ -133,7 +137,7 @@ fun TopInfoPanel(
                         }
                     }
                     Text(
-                        text = "Best: $highScore",
+                        text = context.getString(R.string.best_score_label, highScore),
                         style = MaterialTheme.typography.labelMedium,
                         color = themeColors.onSurface.copy(alpha = 0.7f),
                         fontSize = 12.sp
@@ -151,11 +155,11 @@ fun TopInfoPanel(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.semantics {
-                        contentDescription = "$lives out of 3 lives remaining"
+                        contentDescription = context.getString(R.string.lives_remaining_description, lives)
                     }
                 ) {
                     Text(
-                        text = "Lives: ",
+                        text = context.getString(R.string.lives_label),
                         style = MaterialTheme.typography.titleMedium,
                         color = themeColors.onSurface,
                         fontWeight = FontWeight.Medium
@@ -181,7 +185,7 @@ fun TopInfoPanel(
 
                 // Timer section with pulse animation
                 Text(
-                    text = "Time: ${timeRemaining}s",
+                    text = context.getString(R.string.time_label, timeRemaining),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = when {
@@ -196,9 +200,9 @@ fun TopInfoPanel(
                         }
                         .semantics {
                             contentDescription = when {
-                                timeRemaining <= 5 -> "$timeRemaining seconds remaining - time is running out!"
-                                timeRemaining <= 10 -> "$timeRemaining seconds remaining - hurry up!"
-                                else -> "$timeRemaining seconds remaining"
+                                timeRemaining <= 5 -> context.getString(R.string.time_critical_description, timeRemaining)
+                                timeRemaining <= 10 -> context.getString(R.string.time_warning_description, timeRemaining)
+                                else -> context.getString(R.string.time_normal_description, timeRemaining)
                             }
                         }
                 )

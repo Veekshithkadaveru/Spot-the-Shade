@@ -1,17 +1,13 @@
 package app.krafted.spottheshade.di
 
-import android.content.Context
 import app.krafted.spottheshade.data.repository.PreferencesManager
 import app.krafted.spottheshade.data.repository.UserPreferencesRepository
-import app.krafted.spottheshade.services.SoundManager
-import app.krafted.spottheshade.game.GameLogicManager
 import app.krafted.spottheshade.monetization.MonetizationManager
 import app.krafted.spottheshade.monetization.MockMonetizationManager
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,12 +22,6 @@ object AppModule {
     @Singleton
     fun provideApplicationScope(): CoroutineScope {
         return CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    }
-
-    @Provides
-    @Singleton
-    fun provideGameLogicManager(): GameLogicManager {
-        return GameLogicManager()
     }
 
     @Provides

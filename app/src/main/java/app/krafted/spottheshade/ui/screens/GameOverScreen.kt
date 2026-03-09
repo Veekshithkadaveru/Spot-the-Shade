@@ -39,8 +39,10 @@ import app.krafted.spottheshade.ui.screens.components.ThemeUnlockedCelebration
 import app.krafted.spottheshade.ui.theme.LocalThemeColors
 import app.krafted.spottheshade.viewmodel.GameViewModel
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.geometry.Offset
+import app.krafted.spottheshade.R
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -74,10 +76,16 @@ fun GameOverScreen(
 
     // Determine the game over message based on how the game ended
     val gameOverMessage = when (gameState.lastEndingReason) {
-        GameResult.Timeout -> "Out of Time!"
-        GameResult.Wrong -> "Wrong Shade!"
-        else -> "Game Over!"
+        GameResult.Timeout -> stringResource(R.string.out_of_time)
+        GameResult.Wrong -> stringResource(R.string.wrong_shade_title)
+        else -> stringResource(R.string.game_over_title)
     }
+
+    val gameEndedDescription = stringResource(R.string.game_ended_description, gameOverMessage)
+    val newHighScoreDescription = stringResource(R.string.new_high_score_description, finalScore, userPreferences.highScore)
+    val finalScoreDescription = stringResource(R.string.final_score_description, finalScore, userPreferences.highScore)
+    val startNewGameDescription = stringResource(R.string.start_new_game_description)
+    val returnToMainMenuDescription = stringResource(R.string.return_to_main_menu_description)
 
     // Use theme colors for natural wallpaper background
     val gradientColors = themeColors.gradientColors
@@ -112,7 +120,7 @@ fun GameOverScreen(
                 modifier = Modifier
                     .padding(bottom = 40.dp)
                     .semantics {
-                        contentDescription = "Game ended: $gameOverMessage"
+                        contentDescription = gameEndedDescription
                     }
             )
 
@@ -133,9 +141,9 @@ fun GameOverScreen(
                         .background(
                             brush = Brush.verticalGradient(
                                 listOf(
-                                    Color(0xFF1A1A2E), // Dark navy
-                                    Color(0xFF16213E), // Darker navy
-                                    Color(0xFF0F3460)  // Deep blue
+                                    Color(0xFF1A1A2E),
+                                    Color(0xFF16213E),
+                                    Color(0xFF0F3460)
                                 )
                             ),
                             shape = RoundedCornerShape(20.dp)
@@ -153,9 +161,9 @@ fun GameOverScreen(
                         .padding(24.dp)
                         .semantics {
                             contentDescription = if (finalScore > userPreferences.highScore) {
-                                "New high score! Final score: $finalScore. Previous best: ${userPreferences.highScore}"
+                                newHighScoreDescription
                             } else {
-                                "Final score: $finalScore. Best score: ${userPreferences.highScore}"
+                                finalScoreDescription
                             }
                         }
                 ) {
@@ -168,7 +176,7 @@ fun GameOverScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "FINAL SCORE",
+                                text = stringResource(R.string.final_score_label),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF64B5F6), // Light blue
@@ -211,7 +219,7 @@ fun GameOverScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = if (finalScore > userPreferences.highScore) "NEW BEST!" else "PREVIOUS BEST",
+                                text = if (finalScore > userPreferences.highScore) stringResource(R.string.new_best) else stringResource(R.string.previous_best),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (finalScore > userPreferences.highScore)
@@ -277,7 +285,7 @@ fun GameOverScreen(
                     .height(56.dp)
                     .padding(horizontal = 16.dp)
                     .semantics {
-                        contentDescription = "Start a new game"
+                        contentDescription = startNewGameDescription
                         role = Role.Button
                     },
                 shape = RoundedCornerShape(28.dp),
@@ -287,13 +295,13 @@ fun GameOverScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh icon",
+                    contentDescription = stringResource(R.string.refresh_icon_description),
                     tint = themeColors.textOnButton,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "RETRY",
+                    text = stringResource(R.string.retry),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = themeColors.textOnButton
@@ -316,7 +324,7 @@ fun GameOverScreen(
                     .height(56.dp)
                     .padding(horizontal = 16.dp)
                     .semantics {
-                        contentDescription = "Return to main menu"
+                        contentDescription = returnToMainMenuDescription
                         role = Role.Button
                     },
                 shape = RoundedCornerShape(28.dp),
@@ -326,13 +334,13 @@ fun GameOverScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Home,
-                    contentDescription = "Home icon",
+                    contentDescription = stringResource(R.string.home_icon_description),
                     tint = themeColors.textOnButton,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "MAIN MENU",
+                    text = stringResource(R.string.main_menu),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = themeColors.textOnButton

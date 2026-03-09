@@ -14,8 +14,8 @@ import app.krafted.spottheshade.viewmodel.GameViewModel
 sealed class Screen(val route: String) {
     object MainMenu : Screen("main_menu")
     object Gameplay : Screen("gameplay")
-    object GameOver : Screen("game_over/{score}/{level}") {
-        fun createRoute(score: Int, level: Int) = "game_over/$score/$level"
+    object GameOver : Screen("game_over/{score}") {
+        fun createRoute(score: Int) = "game_over/$score"
     }
 }
 
@@ -27,8 +27,7 @@ fun GameNavGraph(navController: NavHostController, viewModel: GameViewModel) {
         composable(
             Screen.GameOver.route,
             arguments = listOf(
-                navArgument("score") { type = NavType.IntType },
-                navArgument("level") { type = NavType.IntType }
+                navArgument("score") { type = NavType.IntType }
             )
         ) { backStackEntry ->
             val score = backStackEntry.arguments?.getInt("score") ?: 0

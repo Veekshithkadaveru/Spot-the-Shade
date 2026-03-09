@@ -24,8 +24,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
+import app.krafted.spottheshade.R
 import app.krafted.spottheshade.data.model.ThemeType
+import app.krafted.spottheshade.data.model.unlockRequirement
 import app.krafted.spottheshade.ui.theme.getThemeColors
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -51,7 +54,7 @@ fun ThemeUnlockedCelebration(
         label = "sparkle_scale"
     )
 
-    Dialog(onDismissRequest = { /* Prevent dismissing by tapping outside */ }) {
+    Dialog(onDismissRequest = onContinue) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -84,9 +87,9 @@ fun ThemeUnlockedCelebration(
 
                 Text(
                     text = if (unlockedThemes.size == 1) {
-                        "\uD83C\uDF89 NEW THEME UNLOCKED! \uD83C\uDF89"
+                        stringResource(R.string.new_theme_unlocked)
                     } else {
-                        "\uD83C\uDF89 NEW THEMES UNLOCKED! \uD83C\uDF89"
+                        stringResource(R.string.new_themes_unlocked)
                     },
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
@@ -96,7 +99,7 @@ fun ThemeUnlockedCelebration(
 
                 if (unlockedThemes.size > 1) {
                     Text(
-                        text = "(${unlockedThemes.size} themes)",
+                        text = stringResource(R.string.themes_count, unlockedThemes.size),
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp)
@@ -155,7 +158,7 @@ fun ThemeUnlockedCelebration(
                         )
                     ) {
                         Text(
-                            text = "Use Now",
+                            text = stringResource(R.string.use_now),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -173,7 +176,7 @@ fun ThemeUnlockedCelebration(
                         )
                     ) {
                         Text(
-                            text = "Continue",
+                            text = stringResource(R.string.continue_text),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -210,7 +213,11 @@ private fun ThemePreviewCard(theme: ThemeType) {
                     brush = Brush.verticalGradient(
                         colors = themeColors.gradientColors.let { colors ->
                             if (colors.size >= 4) {
-                                listOf(colors[1], colors[3], colors[5])
+                                listOf(
+                                    colors.getOrElse(1) { colors.last() },
+                                    colors.getOrElse(3) { colors.last() },
+                                    colors.getOrElse(5) { colors.last() }
+                                )
                             } else {
                                 colors
                             }
@@ -281,15 +288,11 @@ private fun getThemeEmoji(theme: ThemeType): String {
 }
 
 private fun getUnlockAchievementText(theme: ThemeType): String {
-    return when (theme) {
-        ThemeType.DEFAULT -> "Always available!"
-        ThemeType.FOREST -> "You reached Level 10!"
-        ThemeType.OCEAN -> "You reached Level 20!"
-        ThemeType.SUNSET -> "You reached Level 30!"
-        ThemeType.WINTER -> "You reached Level 40!"
-        ThemeType.SPRING -> "You reached Level 50!"
-        ThemeType.NEON_CYBER -> "You scored 1000 points!"
-        ThemeType.VOLCANIC -> "You scored 2000 points!"
-        ThemeType.ROYAL_GOLD -> "You scored 5000 points!"
+    val (type, target) = theme.unlockRequirement()
+    return when {
+        target == 0 -> "Always available!"
+        type == "level" -> "You reached Level $target!"
+        type == "score" -> "You scored $target points!"
+        else -> "Unlocked!"
     }
 }

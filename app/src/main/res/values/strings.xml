@@ -1,3 +1,119 @@
 <resources>
     <string name="app_name">Spot the Shade</string>
+
+    <!-- Main Menu -->
+    <string name="game_title">Spot the Shade</string>
+    <string name="play">PLAY</string>
+    <string name="high_score_label">HIGH SCORE: %s</string>
+    <string name="daily_challenge">DAILY CHALLENGE</string>
+    <string name="coming_soon">Coming Soon!</string>
+    <string name="locked">Locked</string>
+    <string name="sound_enabled_description">Sound enabled. Tap to turn off sound</string>
+    <string name="sound_disabled_description">Sound disabled. Tap to turn on sound</string>
+    <string name="start_game_description">Start new game. Current high score: %d</string>
+    <string name="daily_challenge_locked_description">Daily challenge is locked. This feature is coming soon.</string>
+
+    <!-- Game Over -->
+    <string name="out_of_time">Out of Time!</string>
+    <string name="wrong_shade_title">Wrong Shade!</string>
+    <string name="game_over_title">Game Over!</string>
+    <string name="game_ended_description">Game ended: %s</string>
+    <string name="final_score_label">FINAL SCORE</string>
+    <string name="new_best">NEW BEST!</string>
+    <string name="previous_best">PREVIOUS BEST</string>
+    <string name="new_high_score_description">New high score! Final score: %1$d. Previous best: %2$d</string>
+    <string name="final_score_description">Final score: %1$d. Best score: %2$d</string>
+    <string name="trophy_description">Trophy for new high score achievement</string>
+    <string name="retry">RETRY</string>
+    <string name="main_menu">MAIN MENU</string>
+    <string name="start_new_game_description">Start a new game</string>
+    <string name="return_to_main_menu_description">Return to main menu</string>
+    <string name="refresh_icon_description">Refresh icon</string>
+    <string name="home_icon_description">Home icon</string>
+
+    <!-- Gameplay / Top Info Panel -->
+    <string name="level_label">Level %d</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="difficulty_expert">Expert</string>
+    <string name="difficulty_master">Master</string>
+    <string name="difficulty_legendary">Legendary</string>
+    <string name="score_star_description">Score star</string>
+    <string name="best_score_label">Best: %d</string>
+    <string name="lives_label">Lives: </string>
+    <string name="time_label">Time: %ds</string>
+    <string name="game_status_description">Game status: Level %1$d, Score %2$d out of %3$d best, %4$d lives remaining, %5$d seconds left</string>
+    <string name="lives_remaining_description">%d out of 3 lives remaining</string>
+    <string name="time_critical_description">%d seconds remaining - time is running out!</string>
+    <string name="time_warning_description">%d seconds remaining - hurry up!</string>
+    <string name="time_normal_description">%d seconds remaining</string>
+
+    <!-- Game Result Overlay -->
+    <string name="wrong_shade_overlay">WRONG SHADE!</string>
+    <string name="wrong_shade_icon_description">Wrong shade</string>
+    <string name="dont_give_up">Don\'t give up! Try again!</string>
+    <string name="times_up">TIME\'S UP!</string>
+    <string name="times_up_icon_description">Time\'s up</string>
+    <string name="need_more_time">Need more time to find the shade?</string>
+    <string name="continue_question">CONTINUE?</string>
+    <string name="continue_icon_description">Continue available</string>
+    <string name="lives_remaining_text">You have %1$d %2$s remaining</string>
+    <string name="life_singular">life</string>
+    <string name="lives_plural">lives</string>
+    <string name="try_again">TRY AGAIN</string>
+    <string name="watch_ad">WATCH AD (+5s)</string>
+    <string name="no_thanks">NO THANKS</string>
+    <string name="continue_button">CONTINUE</string>
+
+    <!-- Theme Selector -->
+    <string name="themes_header">THEMES</string>
+    <string name="theme_section_description">Theme selection section. Swipe to browse available themes</string>
+    <string name="theme_list_description">Horizontal scrollable list of game themes</string>
+    <string name="theme_selected_description">%s theme - currently selected</string>
+    <string name="theme_select_description">%s theme - tap to select</string>
+    <string name="theme_locked_description">%1$s theme - locked. %2$s. Tap to unlock with ad</string>
+    <string name="selected_theme_indicator_description">Currently selected theme indicator</string>
+    <string name="theme_locked_icon_description">Theme is locked</string>
+    <string name="theme_name_default">Default</string>
+    <string name="theme_name_forest">Forest</string>
+    <string name="theme_name_ocean">Ocean</string>
+    <string name="theme_name_sunset">Sunset</string>
+    <string name="theme_name_winter">Winter</string>
+    <string name="theme_name_spring">Spring</string>
+    <string name="theme_name_neon_cyber">Neon Cyber</string>
+    <string name="theme_name_volcanic">Volcanic</string>
+    <string name="theme_name_royal_gold">Royal Gold</string>
+
+    <!-- Theme Unlock Dialog -->
+    <string name="theme_title_format">%1$s %2$s Theme</string>
+    <string name="theme_locked_status">Locked</string>
+    <string name="keep_playing">Keep Playing!</string>
+    <string name="reach_level_to_unlock">Reach Level %d to unlock</string>
+    <string name="score_points_to_unlock">Score %d Points to unlock</string>
+    <string name="keep_playing_to_unlock">Keep playing to unlock</string>
+    <string name="your_level_progress">Your Level: %1$d / %2$d</string>
+    <string name="your_score_progress">Your High Score: %1$d / %2$d</string>
+    <string name="progress_generic">Progress: %1$d / %2$d</string>
+
+    <!-- Theme Unlocked Celebration -->
+    <string name="new_theme_unlocked">NEW THEME UNLOCKED!</string>
+    <string name="new_themes_unlocked">NEW THEMES UNLOCKED!</string>
+    <string name="themes_count">(%d themes)</string>
+    <string name="use_now">Use Now</string>
+    <string name="continue_text">Continue</string>
+    <string name="always_available">Always available!</string>
+    <string name="reached_level">You reached Level %d!</string>
+    <string name="scored_points">You scored %d points!</string>
+
+    <!-- Theme unlock requirements (short labels) -->
+    <string name="unlock_default">Unlocked</string>
+    <string name="unlock_forest">Level 10</string>
+    <string name="unlock_ocean">Level 20</string>
+    <string name="unlock_sunset">Level 30</string>
+    <string name="unlock_winter">Level 40</string>
+    <string name="unlock_spring">Level 50</string>
+    <string name="unlock_neon_cyber">1000 Pts</string>
+    <string name="unlock_volcanic">2000 Pts</string>
+    <string name="unlock_royal_gold">5000 Pts</string>
 </resources>

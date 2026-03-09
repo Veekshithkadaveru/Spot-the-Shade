@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import app.krafted.spottheshade.BuildConfig
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 
@@ -33,10 +34,10 @@ class GameViewModel @Inject constructor(
     private val gameLogicManager: GameLogicManager,
     private val themeManager: ThemeManager,
     private val gameEventManager: GameEventManager,
-    private val errorFeedbackManager: ErrorFeedbackManager
+    private val errorFeedbackManager: ErrorFeedbackManager,
+    private val gameStateManager: GameStateManager
 ) : ViewModel() {
 
-    private val gameStateManager = GameStateManager()
 
     // Tap debouncing to prevent rapid tap race conditions (thread-safe)
     private val lastTapTime = AtomicLong(0L)
@@ -68,10 +69,7 @@ class GameViewModel @Inject constructor(
     init {
         initializeTimerManager()
         initializeSoundPreferences()
-        // Initial unlock check
-        viewModelScope.launch {
-            themeManager.unlockTheme(ThemeType.ROYAL_GOLD)
-        }
+        // Theme unlock milestones are checked in endGame() via checkThemeUnlockMilestones()
     }
 
     private fun initializeTimerManager() {
@@ -129,7 +127,7 @@ class GameViewModel @Inject constructor(
                 val prefs = userPreferencesRepository.userPreferences.first()
                 soundManager.setSoundEnabled(prefs.soundEnabled)
             } catch (e: Exception) {
-                android.util.Log.w("GameViewModel", "Failed to initialize sound preferences", e)
+                if (BuildConfig.DEBUG) android.util.Log.w("GameViewModel", "Failed to initialize sound preferences", e)
                 soundManager.setSoundEnabled(true)
             }
         }
@@ -392,7 +390,7 @@ class GameViewModel @Inject constructor(
                 userPreferencesRepository.setSoundEnabled(newSoundState)
                 soundManager.setSoundEnabled(newSoundState)
             } catch (e: Exception) {
-                android.util.Log.w("GameViewModel", "Failed to toggle sound preferences", e)
+                if (BuildConfig.DEBUG) android.util.Log.w("GameViewModel", "Failed to toggle sound preferences", e)
                 soundManager.setSoundEnabled(!soundManager.isSoundEnabled)
             }
         }

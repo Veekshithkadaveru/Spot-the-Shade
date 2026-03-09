@@ -6,8 +6,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class GameStateManager {
+@Singleton
+class GameStateManager @Inject constructor() {
     private val gameStateMutex = Mutex()
     private val _gameState = MutableStateFlow(GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()

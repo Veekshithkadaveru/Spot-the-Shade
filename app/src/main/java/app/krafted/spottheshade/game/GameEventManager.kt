@@ -41,13 +41,12 @@ class GameEventManager @Inject constructor() {
             GameUiEvent.TimeUrgent -> {
                 _uiEvents.emit(event)
             }
-            GameUiEvent.GameOver -> {
+            GameUiEvent.GameOver,
+            GameUiEvent.ShakeGrid,
+            GameUiEvent.LevelUp -> {
                 _uiEvents.emit(event)
             }
             is GameUiEvent.RevealAnswer -> {
-                _uiEvents.emit(event)
-            }
-            else -> {
                 _uiEvents.emit(event)
             }
         }

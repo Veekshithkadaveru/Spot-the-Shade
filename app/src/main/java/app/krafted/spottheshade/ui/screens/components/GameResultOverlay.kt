@@ -13,7 +13,8 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +49,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import app.krafted.spottheshade.R
 import app.krafted.spottheshade.data.model.GameResult
 
 @Composable
@@ -68,7 +71,13 @@ fun GameResultOverlay(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.8f))
-                .clickable(enabled = false, onClick = {}),
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent(PointerEventPass.Initial)
+                        }
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
             // Main game dialog with modern styling
@@ -83,9 +92,9 @@ fun GameResultOverlay(
                     .background(
                         brush = Brush.verticalGradient(
                             listOf(
-                                Color(0xFF1A1A2E), // Dark navy
-                                Color(0xFF16213E), // Darker navy
-                                Color(0xFF0F3460)  // Deep blue
+                                Color(0xFF1A1A2E),
+                                Color(0xFF16213E),
+                                Color(0xFF0F3460)
                             )
                         ),
                         shape = RoundedCornerShape(24.dp)
@@ -123,7 +132,7 @@ fun GameResultOverlay(
 
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Wrong shade",
+                                contentDescription = stringResource(R.string.wrong_shade_icon_description),
                                 tint = Color(0xFFFF4757),
                                 modifier = Modifier
                                     .size(64.dp)
@@ -136,7 +145,7 @@ fun GameResultOverlay(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = "❌ WRONG SHADE!",
+                                text = stringResource(R.string.wrong_shade_overlay),
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFFFF4757),
@@ -146,7 +155,7 @@ fun GameResultOverlay(
                             )
 
                             Text(
-                                text = "Don't give up! Try again!",
+                                text = stringResource(R.string.dont_give_up),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = Color.White.copy(alpha = 0.8f),
                                 textAlign = TextAlign.Center,
@@ -157,7 +166,7 @@ fun GameResultOverlay(
                         GameResult.Timeout -> {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Time's up",
+                                contentDescription = stringResource(R.string.times_up_icon_description),
                                 tint = Color(0xFFFFD700),
                                 modifier = Modifier.size(64.dp)
                             )
@@ -165,7 +174,7 @@ fun GameResultOverlay(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = "⏰ TIME'S UP!",
+                                text = stringResource(R.string.times_up),
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFFFFD700),
@@ -175,7 +184,7 @@ fun GameResultOverlay(
                             )
 
                             Text(
-                                text = "Need more time to find the shade?",
+                                text = stringResource(R.string.need_more_time),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = Color.White.copy(alpha = 0.8f),
                                 textAlign = TextAlign.Center,
@@ -186,7 +195,7 @@ fun GameResultOverlay(
                         GameResult.OfferContinue -> {
                             Icon(
                                 imageVector = Icons.Default.Star,
-                                contentDescription = "Continue available",
+                                contentDescription = stringResource(R.string.continue_icon_description),
                                 tint = Color(0xFF4ECDC4),
                                 modifier = Modifier.size(64.dp)
                             )
@@ -194,7 +203,7 @@ fun GameResultOverlay(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = "💫 CONTINUE?",
+                                text = stringResource(R.string.continue_question),
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFF4ECDC4),
@@ -204,7 +213,7 @@ fun GameResultOverlay(
                             )
 
                             Text(
-                                text = "You have $lives ${if (lives == 1) "life" else "lives"} remaining",
+                                text = stringResource(R.string.lives_remaining_text, lives, if (lives == 1) stringResource(R.string.life_singular) else stringResource(R.string.lives_plural)),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = Color.White.copy(alpha = 0.8f),
                                 textAlign = TextAlign.Center,
@@ -221,7 +230,7 @@ fun GameResultOverlay(
                     when (gameResult) {
                         GameResult.Wrong -> {
                             GameButton(
-                                text = "TRY AGAIN",
+                                text = stringResource(R.string.try_again),
                                 onClick = onContinue,
                                 gradientColors = listOf(Color(0xFF667EEA), Color(0xFF764BA2)),
                                 icon = Icons.Default.Refresh
@@ -240,14 +249,14 @@ fun GameResultOverlay(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 GameButton(
-                                    text = "📺 WATCH AD (+5s)",
+                                    text = stringResource(R.string.watch_ad),
                                     onClick = onUseExtraTime,
                                     gradientColors = listOf(Color(0xFF00D4AA), Color(0xFF00C9FF)),
                                     icon = null
                                 )
 
                                 GameButton(
-                                    text = "NO THANKS",
+                                    text = stringResource(R.string.no_thanks),
                                     onClick = onDeclineExtraTime,
                                     gradientColors = listOf(Color(0xFF6C7B7F), Color(0xFF4A5568)),
                                     icon = Icons.Default.Close,
@@ -262,14 +271,14 @@ fun GameResultOverlay(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 GameButton(
-                                    text = "CONTINUE",
+                                    text = stringResource(R.string.continue_button),
                                     onClick = onContinue,
                                     gradientColors = listOf(Color(0xFF667EEA), Color(0xFF764BA2)),
                                     icon = Icons.Default.Star
                                 )
 
                                 GameButton(
-                                    text = "MAIN MENU",
+                                    text = stringResource(R.string.main_menu),
                                     onClick = onGoToMenu,
                                     gradientColors = listOf(Color(0xFF6C7B7F), Color(0xFF4A5568)),
                                     icon = Icons.Default.Close,
@@ -299,11 +308,7 @@ private fun GameButton(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .padding(horizontal = 4.dp)
-            .shadow(
-                elevation = if (isSecondary) 4.dp else 8.dp,
-                shape = RoundedCornerShape(16.dp)
-            ),
+            .padding(horizontal = 4.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent
         ),
