@@ -38,10 +38,13 @@ class ThemeManager @Inject constructor(
         return userPreferences.unlockedThemes.contains(theme)
     }
 
-    suspend fun unlockThemeWithRewardedAd(theme: ThemeType): Boolean {
-        val success = monetizationManager.showRewardedAdForTheme(theme)
+    suspend fun unlockThemeWithRewardedAd(theme: ThemeType, activity: android.app.Activity): Boolean {
+        val success = monetizationManager.showRewardedAdForTheme(theme, activity)
         if (success) {
-            unlockTheme(theme)
+            val progress = userPreferencesRepository.incrementThemeAdProgress(theme)
+            if (progress >= 3) {
+                unlockTheme(theme)
+            }
         }
         return success
     }

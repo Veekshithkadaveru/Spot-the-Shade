@@ -153,15 +153,17 @@ fun ThemeUnlockedCelebration(
                             .weight(1f)
                             .height(48.dp),
                         shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = themeColors.gradientColors.getOrElse(3) { Color(0xFF6366F1) }
                         )
                     ) {
                         Text(
                             text = stringResource(R.string.use_now),
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 1
                         )
                     }
 
@@ -171,14 +173,16 @@ fun ThemeUnlockedCelebration(
                             .weight(1f)
                             .height(48.dp),
                         shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color.White
                         )
                     ) {
                         Text(
                             text = stringResource(R.string.continue_text),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
                         )
                     }
                 }

@@ -32,6 +32,8 @@
     <string name="home_icon_description">Home icon</string>
 
     <!-- Gameplay / Top Info Panel -->
+    <string name="skip_level">SKIP LEVEL</string>
+    <string name="skip_used">SKIP USED</string>
     <string name="level_label">Level %d</string>
     <string name="difficulty_easy">Easy</string>
     <string name="difficulty_medium">Medium</string>
@@ -64,7 +66,7 @@
     <string name="try_again">TRY AGAIN</string>
     <string name="watch_ad">WATCH AD (+5s)</string>
     <string name="no_thanks">NO THANKS</string>
-    <string name="continue_button">CONTINUE</string>
+    <string name="continue_button">Continue</string>
 
     <!-- Theme Selector -->
     <string name="themes_header">THEMES</string>

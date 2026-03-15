@@ -35,9 +35,14 @@ class GameViewModel @Inject constructor(
     private val themeManager: ThemeManager,
     private val gameEventManager: GameEventManager,
     private val errorFeedbackManager: ErrorFeedbackManager,
-    private val gameStateManager: GameStateManager
+    private val gameStateManager: GameStateManager,
+    private val monetizationManager: app.krafted.spottheshade.monetization.MonetizationManager
 ) : ViewModel() {
 
+
+    // State for skip level in progress - owned by ViewModel so UI always stays in sync
+    private val _isSkipInProgress = MutableStateFlow(false)
+    val isSkipInProgress: StateFlow<Boolean> = _isSkipInProgress.asStateFlow()
 
     // Tap debouncing to prevent rapid tap race conditions (thread-safe)
     private val lastTapTime = AtomicLong(0L)
@@ -150,6 +155,7 @@ class GameViewModel @Inject constructor(
                     level = 1,
                     gameResult = null,
                     hasUsedExtraTime = false,
+                    hasSkippedLevel = false,
                     lives = 3,
                     currentShape = currentShape
                 )
@@ -266,8 +272,13 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    fun useExtraTime() {
+    fun useExtraTime(activity: android.app.Activity) {
         viewModelScope.launch {
+            val success = monetizationManager.showRewardedAdForExtraTime(activity)
+            if (!success) {
+                return@launch
+            }
+
             // Atomic check-and-update to prevent double-tap exploits
             var didUseExtraTime = false
             gameStateManager.updateGameState { currentState ->
@@ -282,6 +293,56 @@ class GameViewModel @Inject constructor(
             if (didUseExtraTime) {
                 timerManager.startTimer(5)
             }
+        }
+    }
+
+    fun skipLevel(activity: android.app.Activity) {
+        viewModelScope.launch {
+            // Bug fix 4: Double-call guard - prevent concurrent skip attempts
+            if (_isSkipInProgress.value) return@launch
+            _isSkipInProgress.value = true
+
+            // Bug fix 3: Atomically set isGameActive=false before ad shows to prevent
+            // the timer firing a final tick that would deduct a life while the ad is up.
+            var capturedLevel = 1
+            var capturedTime = gameStateManager.gameState.value.timeRemaining
+            gameStateManager.updateGameState { currentState ->
+                capturedLevel = currentState.level
+                capturedTime = currentState.timeRemaining
+                currentState.copy(isGameActive = false)
+            }
+            timerManager.cancelTimer()
+
+            val success = monetizationManager.showRewardedAdForSkipLevel(activity)
+            if (!success) {
+                // Bug fix 1 & 3: Restore game to active state so UI resets correctly.
+                // Bug fix 2: Give at least 5 seconds grace so a near-expired timer
+                // doesn't instantly kill the player after a failed ad.
+                gameStateManager.updateGameState { it.copy(isGameActive = true) }
+                timerManager.startTimer(maxOf(capturedTime, 5))
+                _isSkipInProgress.value = false
+                return@launch
+            }
+
+            val nextLevel = capturedLevel + 1
+            userPreferencesRepository.updateHighestLevel(nextLevel)
+            val grid = gameLogicManager.generateGrid(level = nextLevel)
+            val currentShape = grid.firstOrNull()?.shape ?: ShapeType.CIRCLE
+
+            gameStateManager.updateGameState { currentState ->
+                currentState.copy(
+                    level = nextLevel,
+                    grid = grid,
+                    isGameActive = true,
+                    gameResult = null,
+                    hasUsedExtraTime = false,
+                    hasSkippedLevel = true,
+                    currentShape = currentShape
+                )
+            }
+
+            timerManager.startTimer(gameLogicManager.getTimerDuration(nextLevel))
+            _isSkipInProgress.value = false
         }
     }
 
@@ -402,9 +463,9 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    fun unlockThemeWithRewardedAd(theme: ThemeType) {
+    fun unlockThemeWithRewardedAd(theme: ThemeType, activity: android.app.Activity) {
         viewModelScope.launch {
-            themeManager.unlockThemeWithRewardedAd(theme)
+            themeManager.unlockThemeWithRewardedAd(theme, activity)
         }
     }
 

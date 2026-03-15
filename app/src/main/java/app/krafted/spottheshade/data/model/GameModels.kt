@@ -16,6 +16,7 @@ data class GameState(
     val isGameActive: Boolean = false,
     val gameResult: GameResult? = null,
     val hasUsedExtraTime: Boolean = false,
+    val hasSkippedLevel: Boolean = false,
     val currentShape: ShapeType = ShapeType.CIRCLE,
     val lastEndingReason: GameResult? = null,
     val revealTargetId: Int? = null
@@ -33,6 +34,7 @@ data class UserPreferences(
     val highScore: Int = 0,
     val highestLevel: Int = 1,
     val unlockedThemes: Set<ThemeType> = setOf(ThemeType.DEFAULT),
+    val themeAdProgress: Map<String, Int> = emptyMap(), // Maps ThemeType.name to count of ads watched
     val currentTheme: ThemeType = ThemeType.DEFAULT,
     val soundEnabled: Boolean = true,
     val totalGamesPlayed: Int = 0,

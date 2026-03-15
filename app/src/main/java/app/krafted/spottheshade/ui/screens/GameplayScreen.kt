@@ -10,8 +10,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,8 +42,22 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import app.krafted.spottheshade.data.model.GameResult
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
+import app.krafted.spottheshade.R
 import app.krafted.spottheshade.data.model.UserPreferences
 import app.krafted.spottheshade.ui.navigation.Screen
 import app.krafted.spottheshade.ui.screens.components.GameResultOverlay
@@ -324,6 +342,136 @@ fun GameplayScreen(
                     }
                 }
             }
+
+            // Skip Level Button
+            val isSkipInProgress by viewModel.isSkipInProgress.collectAsState()
+            val context = LocalContext.current
+
+            val isSkipEnabled = !isSkipInProgress && gameState.isGameActive && !gameState.hasSkippedLevel
+            val skipGradient = if (gameState.hasSkippedLevel) {
+                Brush.horizontalGradient(listOf(Color(0xFF3A3A4A), Color(0xFF4A4A5A)))
+            } else {
+                Brush.horizontalGradient(themeColors.buttonSecondary)
+            }
+
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 10.dp, horizontal = 24.dp)
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .shadow(
+                        elevation = if (isSkipEnabled) 10.dp else 0.dp,
+                        shape = RoundedCornerShape(16.dp),
+                        ambientColor = themeColors.buttonSecondary.lastOrNull() ?: Color.Transparent,
+                        spotColor = themeColors.buttonSecondary.firstOrNull() ?: Color.Transparent
+                    )
+            ) {
+                Button(
+                    onClick = {
+                        if (isSkipEnabled) {
+                            val activity = context as? android.app.Activity
+                            activity?.let { act -> viewModel.skipLevel(act) }
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    enabled = isSkipEnabled,
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(brush = skipGradient, shape = RoundedCornerShape(16.dp))
+                            .border(
+                                width = 2.dp,
+                                color = if (gameState.hasSkippedLevel) Color.White.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(16.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSkipInProgress) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = "Loading Ad...",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        } else if (gameState.hasSkippedLevel) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SkipNext,
+                                    contentDescription = stringResource(R.string.skip_used),
+                                    tint = Color.White.copy(alpha = 0.4f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.skip_used),
+                                    color = Color.White.copy(alpha = 0.4f),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                        } else {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = stringResource(R.string.skip_level),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 14.sp,
+                                    letterSpacing = 0.8.sp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            color = Color.White.copy(alpha = 0.25f),
+                                            shape = RoundedCornerShape(5.dp)
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "AD",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 10.sp,
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -332,7 +480,14 @@ fun GameplayScreen(
         lives = gameState.lives,
         onContinue = { viewModel.continueAfterLifeLoss() },
         onDeclineExtraTime = { viewModel.declineExtraTime() },
-        onUseExtraTime = { viewModel.useExtraTime() },
+        onUseExtraTime = { 
+            // In a real activity context, we'd pass the actual Activity.
+            // Since this is a Compose view inside an Activity, we can use LocalContext.
+            val activity = it as? android.app.Activity
+            activity?.let { act ->
+                viewModel.useExtraTime(act)
+            }
+        },
         onGoToMenu = {
             navController.navigate(Screen.MainMenu.route) {
                 popUpTo(Screen.MainMenu.route) {

@@ -6,6 +6,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import app.krafted.spottheshade.services.SoundManager
 import app.krafted.spottheshade.BuildConfig
+import com.google.android.gms.ads.MobileAds
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -17,6 +18,9 @@ class SpotTheShadeApplication : Application(), DefaultLifecycleObserver {
 
     override fun onCreate() {
         super<Application>.onCreate()
+
+        // Initialize AdMob
+        MobileAds.initialize(this) {}
 
         // Register for app lifecycle events
         try {

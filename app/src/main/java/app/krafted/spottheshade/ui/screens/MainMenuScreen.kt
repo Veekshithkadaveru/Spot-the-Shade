@@ -63,6 +63,8 @@ import app.krafted.spottheshade.ui.theme.White
 import app.krafted.spottheshade.viewmodel.GameViewModel
 import androidx.compose.foundation.Image
 
+import androidx.compose.runtime.LaunchedEffect
+
 @Composable
 fun MainMenuScreen(
     navController: NavHostController,
@@ -80,8 +82,24 @@ fun MainMenuScreen(
         ThemeUnlockDialog(
             theme = theme,
             userPreferences = userPreferences,
-            onDismiss = { lockedThemeToShow = null }
+            onDismiss = { lockedThemeToShow = null },
+            onUnlockWithAd = { activity ->
+                viewModel.unlockThemeWithRewardedAd(theme, activity)
+                // We no longer automatically dismiss here, so the user can see 
+                // the UI update to (1/3) etc., or see the unlock animation if 3/3.
+                // The dialog will naturally become irrelevant once the theme unlocks 
+                // if we add logic or let the user dismiss it. 
+                // A better approach is to let them close it or Auto-close if fully unlocked.
+            }
         )
+        
+        // Auto-close dialog if it was successfully unlocked
+        LaunchedEffect(userPreferences.unlockedThemes) {
+            if (userPreferences.unlockedThemes.contains(theme)) {
+                lockedThemeToShow = null
+                // Optional: you could show a quick toast saying "Theme Unlocked!" here
+            }
+        }
     }
 
     Box(

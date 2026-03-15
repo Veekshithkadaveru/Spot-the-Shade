@@ -26,11 +26,18 @@ import app.krafted.spottheshade.data.model.UserPreferences
 import app.krafted.spottheshade.data.model.unlockRequirement
 import app.krafted.spottheshade.ui.theme.getThemeColors
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
+
 @Composable
 fun ThemeUnlockDialog(
     theme: ThemeType,
     userPreferences: UserPreferences,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onUnlockWithAd: ((android.app.Activity) -> Unit)? = null
 ) {
     val themeColors = getThemeColors(theme)
     val requirement = theme.unlockRequirement()
@@ -42,6 +49,19 @@ fun ThemeUnlockDialog(
         animationSpec = tween(durationMillis = 800),
         label = "progress_animation"
     )
+
+    val context = LocalContext.current
+    
+    // Key change: don't remember loading state locally if we want it to reset 
+    // when the user preferences update (e.g. ad finishes).
+    // Or, tie the loading state reset to a change in the userPreferences ad progress count.
+    var isAdLoading by remember { mutableStateOf(false) }
+    val adsWatched = userPreferences.themeAdProgress[theme.name] ?: 0
+
+    // Reset loading state if the ads watched count changes
+    LaunchedEffect(adsWatched) {
+        isAdLoading = false
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -171,6 +191,52 @@ fun ThemeUnlockDialog(
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
+
+                if (onUnlockWithAd != null) {
+                    Button(
+                        onClick = {
+                            val activity = context as? android.app.Activity
+                            if (activity != null && !isAdLoading) {
+                                isAdLoading = true
+                                onUnlockWithAd(activity)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF00D4AA)
+                        ),
+                        enabled = !isAdLoading
+                    ) {
+                        if (isAdLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            
+                            val adsWatched = userPreferences.themeAdProgress[theme.name] ?: 0
+                            Text(
+                                text = "Watch Ad ($adsWatched/3)",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
                 Button(
                     onClick = onDismiss,
