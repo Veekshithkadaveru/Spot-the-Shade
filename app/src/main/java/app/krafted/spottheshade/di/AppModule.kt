@@ -1,13 +1,15 @@
 package app.krafted.spottheshade.di
 
+import android.content.Context
 import app.krafted.spottheshade.data.repository.PreferencesManager
 import app.krafted.spottheshade.data.repository.UserPreferencesRepository
 import app.krafted.spottheshade.monetization.MonetizationManager
-import app.krafted.spottheshade.monetization.MockMonetizationManager
+import app.krafted.spottheshade.monetization.AdMobMonetizationManager
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,8 +28,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideMonetizationManager(): MonetizationManager {
-        return MockMonetizationManager()
+    fun provideMonetizationManager(@ApplicationContext context: Context): MonetizationManager {
+        return AdMobMonetizationManager(context)
     }
 
 }

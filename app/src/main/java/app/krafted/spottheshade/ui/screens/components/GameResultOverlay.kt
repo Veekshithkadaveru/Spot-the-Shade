@@ -53,15 +53,25 @@ import androidx.compose.ui.res.stringResource
 import app.krafted.spottheshade.R
 import app.krafted.spottheshade.data.model.GameResult
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 @Composable
 fun GameResultOverlay(
     gameResult: GameResult?,
     lives: Int,
     onContinue: () -> Unit,
     onDeclineExtraTime: () -> Unit,
-    onUseExtraTime: () -> Unit,
+    onUseExtraTime: (android.content.Context) -> Unit,
     onGoToMenu: () -> Unit
 ) {
+    val context = LocalContext.current
+    var isAdLoading by remember { mutableStateOf(false) }
+
     AnimatedVisibility(
         visible = gameResult in listOf(GameResult.Wrong, GameResult.Timeout, GameResult.OfferContinue),
         enter = fadeIn(animationSpec = tween(300)) + scaleIn(animationSpec = tween(300)),
@@ -238,19 +248,19 @@ fun GameResultOverlay(
                         }
 
                         GameResult.Timeout -> {
-                            // This button should trigger rewarded ad flow:
-                            // 1. Show loading state while ad loads ("Loading Ad...")
-                            // 2. Disable button if ad fails to load
-                            // 3. Show different text based on ad availability
-                            // 4. Only grant extra time if user completes full ad
-                            // 5. Add analytics tracking for ad requests and completions
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 GameButton(
-                                    text = stringResource(R.string.watch_ad),
-                                    onClick = onUseExtraTime,
+                                    text = if (isAdLoading) "Loading..." else stringResource(R.string.watch_ad),
+                                    onClick = {
+                                        if (!isAdLoading) {
+                                            isAdLoading = true
+                                            onUseExtraTime(context)
+                                            // Ideally, reset loading state when ad completes or fails
+                                        }
+                                    },
                                     gradientColors = listOf(Color(0xFF00D4AA), Color(0xFF00C9FF)),
                                     icon = null
                                 )

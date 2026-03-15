@@ -14,4 +14,5 @@ interface UserPreferencesRepository {
     suspend fun setSoundEnabled(enabled: Boolean)
     suspend fun incrementGamesPlayed()
     suspend fun incrementCorrectAnswers()
+    suspend fun incrementThemeAdProgress(theme: ThemeType): Int
 }

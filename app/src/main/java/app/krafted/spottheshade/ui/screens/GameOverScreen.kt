@@ -264,13 +264,6 @@ fun GameOverScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Consider adding these monetization features:
-            // 1. "REVIVE" button - Watch ad to continue with extra lives
-            // 2. "DOUBLE COINS" button - Watch ad to double any earned coins/points
-            // 3. "UNLOCK PREMIUM THEME" button - Special offer after high scores
-            // 4. Interstitial ad after every 3-5 games (non-intrusive timing)
-            // 5. Banner ad at bottom (optional, less intrusive)
-
             // Retry Button
             Button(
                 onClick = {

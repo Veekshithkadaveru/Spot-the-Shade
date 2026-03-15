@@ -96,6 +96,9 @@ dependencies {
     // Lifecycle for process lifecycle management
     implementation("androidx.lifecycle:lifecycle-process:${libs.versions.lifecycleRuntimeKtx.get()}")
     
+    // AdMob
+    implementation("com.google.android.gms:play-services-ads:23.0.0")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -33,6 +33,9 @@ class PreferencesManager @Inject constructor(
         private val SOUND_ENABLED_KEY = booleanPreferencesKey("sound_enabled")
         private val TOTAL_GAMES_PLAYED_KEY = intPreferencesKey("total_games_played")
         private val TOTAL_CORRECT_ANSWERS_KEY = intPreferencesKey("total_correct_answers")
+        
+        // Keys for theme ad progress
+        private fun getThemeAdProgressKey(themeName: String) = intPreferencesKey("ad_progress_$themeName")
     }
 
     override val userPreferences: Flow<UserPreferences> = context.dataStore.data
@@ -47,6 +50,15 @@ class PreferencesManager @Inject constructor(
                     null
                 }
             }?.toSet() ?: emptySet()) + ThemeType.DEFAULT
+
+            // Build map of ad progress for all themes
+            val themeAdProgress = mutableMapOf<String, Int>()
+            ThemeType.entries.forEach { theme ->
+                val progress = preferences[getThemeAdProgressKey(theme.name)] ?: 0
+                if (progress > 0) {
+                    themeAdProgress[theme.name] = progress
+                }
+            }
 
             // Parse current theme
             val rawCurrentTheme = preferences[CURRENT_THEME_KEY]?.let {
@@ -71,6 +83,7 @@ class PreferencesManager @Inject constructor(
                 highScore = preferences[HIGH_SCORE_KEY] ?: 0,
                 highestLevel = preferences[HIGHEST_LEVEL_KEY] ?: 1,
                 unlockedThemes = unlockedThemes,
+                themeAdProgress = themeAdProgress,
                 currentTheme = validatedCurrentTheme,
                 soundEnabled = preferences[SOUND_ENABLED_KEY] ?: true,
                 totalGamesPlayed = preferences[TOTAL_GAMES_PLAYED_KEY] ?: 0,
@@ -162,6 +175,22 @@ class PreferencesManager @Inject constructor(
             if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to increment correct answers", e)
             // Don't show error to user for analytics failures
         }
+    }
+
+    override suspend fun incrementThemeAdProgress(theme: ThemeType): Int {
+        var newProgress = 0
+        try {
+            context.dataStore.edit { preferences ->
+                val key = getThemeAdProgressKey(theme.name)
+                val current = preferences[key] ?: 0
+                newProgress = current + 1
+                preferences[key] = newProgress
+            }
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) android.util.Log.e("PreferencesManager", "Failed to increment theme ad progress", e)
+            errorFeedbackManager.emitError(UserError.PreferencesSaveFailed)
+        }
+        return newProgress
     }
 
     suspend fun resetAllData() {
